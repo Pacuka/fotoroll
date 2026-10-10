@@ -1,0 +1,59 @@
+name: Bug report
+description: Something doesn't work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Problems with the Immich **server** belong to the
+        [Immich project](https://github.com/immich-app/immich/issues). Security issues: see SECURITY.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open …
+        2. Click …
+    validations:
+      required: true
+  - type: input
+    id: fotoroll
+    attributes:
+      label: Fotoroll version
+      placeholder: "0.9.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run it?
+      options: [AppImage, Built from source, Other]
+    validations:
+      required: true
+  - type: input
+    id: immich
+    attributes:
+      label: Immich server version
+      placeholder: "v3.1.0"
+    validations:
+      required: true
+  - type: input
+    id: distro
+    attributes:
+      label: Distribution and desktop
+      placeholder: "Fedora 42, GNOME 48, Wayland"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Start Fotoroll from a terminal to see its output. Remove server addresses and tokens.
+      render: text

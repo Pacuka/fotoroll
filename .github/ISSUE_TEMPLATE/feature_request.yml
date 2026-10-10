@@ -1,0 +1,14 @@
+name: Feature request
+description: An idea or something the official Immich apps have and Fotoroll doesn't
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: Check [docs/PARITY.md](https://github.com/Pacuka/fotoroll/blob/main/docs/PARITY.md) first; it lists what's already planned.
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: Describe the feature and why it would help. For parity requests, say where it is in the web or mobile app.
+    validations:
+      required: true

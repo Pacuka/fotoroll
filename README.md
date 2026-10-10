@@ -117,6 +117,18 @@ The integration tests open every page, use the viewer, play videos, edit metadat
 select and favorite photos, look around in 360° and 180° panoramas, and fail on any frame slower than
 250 ms during hover previews. Panorama test images come from `tool/make_pano_fixtures.py`.
 
+## Privacy
+
+Fotoroll talks only to your Immich server and, for the map, to the tile servers of the selected map
+style (OpenStreetMap by default). No telemetry, no accounts. Your login is kept in the system keyring.
+Details in [SECURITY.md](SECURITY.md).
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Commits
+need a DCO sign-off (`git commit -s`); CI runs the analyzer, unit and integration tests on every pull
+request. Please report security issues privately ([SECURITY.md](SECURITY.md)).
+
 ## Credits
 
 - [Immich](https://immich.app) (AGPL-3.0): the server this app talks to; UI translations come from

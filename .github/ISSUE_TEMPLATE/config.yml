@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Immich server problems
+    url: https://github.com/immich-app/immich/issues
+    about: Issues with the Immich server itself go to the Immich project.
+  - name: Report a security vulnerability
+    url: https://github.com/Pacuka/fotoroll/security/advisories/new
+    about: Please report security issues privately.
