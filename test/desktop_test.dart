@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fotoroll/desktop_integration.dart';
 import 'package:fotoroll/widgets/upload_dialog.dart';
 import 'package:fotoroll/window.dart';
 import 'package:path/path.dart' as p;
@@ -29,5 +30,13 @@ void main() {
     expect(e, contains('Exec="/home/x/.local/lib/fotoroll/fotoroll" --hidden'));
     expect(e, contains('Type=Application'));
     expect(e, contains('Icon=io.github.pacuka.Fotoroll'));
+  });
+
+  test('AppImage menu entry starts the AppImage file and matches the window', () {
+    final e = desktopEntry('/home/x/Apps/Fotoroll-0.9.1-x86_64.AppImage');
+    expect(e, contains('Exec="/home/x/Apps/Fotoroll-0.9.1-x86_64.AppImage" %U'));
+    expect(e, contains('Icon=io.github.pacuka.Fotoroll'));
+    expect(e, contains('StartupWMClass=io.github.pacuka.Fotoroll'), reason: 'GNOME maps the window to this entry');
+    expect(e, contains('X-Fotoroll-AppImage=true'), reason: 'marks entries the app may rewrite');
   });
 }

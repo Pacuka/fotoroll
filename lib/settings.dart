@@ -56,6 +56,8 @@ class AppSettings extends ChangeNotifier {
   SlideshowPrefs slideshow = SlideshowPrefs();
   /// Closing the window keeps the app (and folder backup) running in the tray.
   bool closeToTray = true;
+  /// The AppImage asked once whether to add itself to the app menu.
+  bool menuEntryAsked = false;
 
   AppSettings({String? configDir})
       : _dir = configDir ?? appConfigDir();
@@ -73,6 +75,7 @@ class AppSettings extends ChangeNotifier {
       mapStyle = j['mapStyle'] as String? ?? 'auto';
       slideshow = SlideshowPrefs.fromJson((j['slideshow'] as Map?)?.cast<String, dynamic>() ?? {});
       closeToTray = j['closeToTray'] as bool? ?? true;
+      menuEntryAsked = j['menuEntryAsked'] as bool? ?? false;
     } catch (_) {}
   }
 
@@ -82,7 +85,9 @@ class AppSettings extends ChangeNotifier {
     String? mapStyle,
     SlideshowPrefs? slideshow,
     bool? closeToTray,
+    bool? menuEntryAsked,
   }) async {
+    if (menuEntryAsked != null) this.menuEntryAsked = menuEntryAsked;
     if (slideshow != null) this.slideshow = slideshow;
     if (closeToTray != null) this.closeToTray = closeToTray;
     if (language != null) this.language = language;
@@ -97,6 +102,7 @@ class AppSettings extends ChangeNotifier {
         'mapStyle': this.mapStyle,
         'slideshow': this.slideshow.toJson(),
         'closeToTray': this.closeToTray,
+        'menuEntryAsked': this.menuEntryAsked,
       }));
     } catch (_) {}
   }

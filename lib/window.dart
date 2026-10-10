@@ -98,7 +98,9 @@ Future<void> setAutostart(bool on, {String? executable}) async {
     return;
   }
   await f.parent.create(recursive: true);
-  await f.writeAsString(autostartEntry(executable ?? Platform.resolvedExecutable));
+  // As an AppImage, the binary sits on a mount that is gone after exit: start the
+  // AppImage file itself.
+  await f.writeAsString(autostartEntry(executable ?? Platform.environment['APPIMAGE'] ?? Platform.resolvedExecutable));
 }
 
 @visibleForTesting

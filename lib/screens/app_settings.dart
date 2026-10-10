@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../desktop_integration.dart';
 import '../i18n.dart';
 import '../settings.dart';
 import '../window.dart';
@@ -148,6 +149,23 @@ class _DesktopSettingsState extends State<_DesktopSettings> {
           value: tray && settings.closeToTray,
           onChanged: tray ? (v) => settings.update(closeToTray: v) : null,
         ),
+        if (appImagePath != null)
+          FutureBuilder<MenuEntryState>(
+            future: menuEntryState(),
+            builder: (context, snap) => SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.app_registration),
+              title: Text(t('linux_menu_entry_setting')),
+              subtitle: Text(t('linux_menu_entry_setting_desc')),
+              value: snap.data == MenuEntryState.current || snap.data == MenuEntryState.outdated,
+              onChanged: snap.hasData
+                  ? (v) async {
+                      v ? await installMenuEntry() : await removeMenuEntry();
+                      if (mounted) setState(() {});
+                    }
+                  : null,
+            ),
+          ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           secondary: const Icon(Icons.power_settings_new),

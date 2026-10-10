@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../api.dart';
 import '../backup.dart';
+import '../desktop_integration.dart';
 import '../i18n.dart';
 import '../sources.dart';
 import '../settings.dart';
@@ -129,6 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     _setupTray();
     _applyDesktopSettings();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkMenuEntry());
     settings.addListener(_applyDesktopSettings);
     i18n.addListener(_setupTray); // menu labels follow the language
   }
@@ -141,6 +143,28 @@ class _HomeScreenState extends State<HomeScreen> {
       ]);
 
   void _applyDesktopSettings() => setCloseToTray(settings.closeToTray);
+
+  /// AppImage: keep its menu entry pointing at the current file, and offer one
+  /// once (without it GNOME shows a generic icon and the raw app id).
+  Future<void> _checkMenuEntry() async {
+    final state = await menuEntryState();
+    if (state == MenuEntryState.outdated) return installMenuEntry(); // moved / updated AppImage
+    if (state != MenuEntryState.missing || settings.menuEntryAsked || !mounted) return;
+    final add = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.app_registration),
+        title: Text(t('linux_menu_entry_title')),
+        content: Text(t('linux_menu_entry_body')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('linux_not_now'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('linux_menu_entry_add'))),
+        ],
+      ),
+    );
+    await settings.update(menuEntryAsked: true);
+    if (add == true) await installMenuEntry();
+  }
 
   Future<void> _loadPrefs() async {
     try {
