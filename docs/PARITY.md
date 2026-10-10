@@ -98,7 +98,8 @@ Source of truth: `immich-app/immich@v3.1.0` (web routes in `web/src/routes`, mob
 | Drag & drop files / folders to upload | ✅ (paste not yet) |
 | Hover video preview | ✅ |
 | Upload only on local network | ⬜ |
-| Packaging: .deb, .rpm, AppImage, Flatpak (Flathub), Snap, AUR | ⬜ |
+| Packaging: AppImage (Ubuntu 22.04 base, libmpv bundled, CI on tags) | ✅ |
+| Packaging: Flatpak (Flathub), AUR, .deb, .rpm, Snap | ⬜ |
 
 ## How this is verified
 - `flutter test` — unit + widget tests, incl. smoke tests that build every settings/admin screen.

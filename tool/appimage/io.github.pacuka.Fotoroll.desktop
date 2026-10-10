@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Fotoroll
+GenericName=Photo Library
+Comment=Browse, back up and manage the photos on your Immich server
+Exec=fotoroll %U
+Icon=io.github.pacuka.Fotoroll
+Terminal=false
+Categories=Graphics;Photography;
+Keywords=immich;photos;gallery;backup;
+StartupWMClass=io.github.pacuka.Fotoroll

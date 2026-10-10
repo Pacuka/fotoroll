@@ -1,0 +1,26 @@
+# Build environment for the AppImage: Ubuntu 22.04 (glibc 2.35), so the result
+# runs on practically every current Linux distribution.
+#   podman build -t fotoroll-appimage -f tool/appimage/Containerfile tool/appimage
+FROM docker.io/library/ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      build-essential clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev \
+      libmpv-dev libsecret-1-dev \
+      ca-certificates curl git unzip xz-utils file desktop-file-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG FLUTTER_VERSION=3.47.5
+RUN curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" \
+      | tar -xJ -C /opt \
+    && git config --system --add safe.directory '*'
+ENV PATH=/opt/flutter/bin:$PATH
+RUN flutter config --no-analytics --no-cli-animations && flutter precache --linux
+
+# AppImage tooling; extract-and-run because containers have no FUSE.
+RUN curl -fsSL -o /usr/local/bin/linuxdeploy \
+      https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage \
+    && curl -fsSL -o /usr/local/bin/appimagetool \
+      https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage \
+    && chmod +x /usr/local/bin/linuxdeploy /usr/local/bin/appimagetool
+ENV APPIMAGE_EXTRACT_AND_RUN=1

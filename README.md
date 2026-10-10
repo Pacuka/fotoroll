@@ -62,12 +62,30 @@ See [docs/PARITY.md](docs/PARITY.md) for the full feature checklist against the 
 
 On Arch / CachyOS: `sudo pacman -S gtk3 mpv libsecret clang cmake ninja pkgconf`
 
+## Download
+
+**AppImage** (any x86-64 Linux with glibc 2.35+, e.g. Ubuntu 22.04, Debian 12, Fedora 36 or newer;
+video playback is bundled, nothing else to install):
+
+```bash
+chmod +x Fotoroll-*-x86_64.AppImage
+./Fotoroll-*-x86_64.AppImage
+```
+
+Releases attach the AppImage automatically (`.github/workflows/appimage.yml`).
+
 ## Build and install
 
 ```bash
 flutter run -d linux        # development
 ./install.sh                # build + install to ~/.local (no root) + app menu entry
 ./install.sh --uninstall    # remove (settings and backup state are kept)
+```
+
+Build the AppImage yourself (in an Ubuntu 22.04 podman container, from any distro):
+
+```bash
+tool/build_appimage.sh      # → build/appimage-out/Fotoroll-<version>-x86_64.AppImage
 ```
 
 Where things live:

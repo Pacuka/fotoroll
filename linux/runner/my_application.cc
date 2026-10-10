@@ -361,7 +361,8 @@ MyApplication* my_application_new() {
   // (which may be hidden in the tray). Debug builds stay non-unique so tests and
   // `flutter run` can start while the installed app is open.
 #ifdef NDEBUG
-  const GApplicationFlags flags = G_APPLICATION_DEFAULT_FLAGS;
+  // = G_APPLICATION_DEFAULT_FLAGS (GLib 2.74+) and the older, now deprecated FLAGS_NONE.
+  const GApplicationFlags flags = static_cast<GApplicationFlags>(0);
 #else
   const GApplicationFlags flags = G_APPLICATION_NON_UNIQUE;
 #endif
