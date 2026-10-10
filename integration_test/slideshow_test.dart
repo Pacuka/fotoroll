@@ -18,6 +18,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'fake_server.dart';
+import 'focus.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,7 @@ void main() {
     Future<void> wait(Duration d) async {
       final end = DateTime.now().add(d);
       while (DateTime.now().isBefore(end)) {
+        keepViewFocused(tester);
         await tester.pump(const Duration(milliseconds: 16));
         await Future<void>.delayed(const Duration(milliseconds: 16));
       }
@@ -58,6 +60,7 @@ void main() {
 
     int previews(int i) => server.requests.where((r) => r == 'GET /api/assets/${uid(i)}/thumbnail').length;
 
+    ignoreOsFocusLoss(tester);
     tester.view.physicalSize = const Size(1400, 800);
     tester.view.devicePixelRatio = 1;
     await tester.pumpWidget(MaterialApp(
@@ -80,8 +83,11 @@ void main() {
     noErrors();
 
     // Space pauses: no new slides for 2.5 s.
+    focusView(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
-    await wait(const Duration(milliseconds: 300));
+    // A slide that was loading when Space came still appears (and preloads the
+    // next one); after that nothing may change.
+    await wait(const Duration(milliseconds: 1200));
     final before = server.requests.length;
     final shownBefore = [for (var i = 0; i < 10; i++) previews(i)];
     await wait(const Duration(milliseconds: 2500));
@@ -106,6 +112,7 @@ void main() {
 
     // Escape: back in the viewer, on the slide the slideshow stopped at.
     final last = [for (var i = 9; i >= 0; i--) if (previews(i) > 0) i];
+    focusView(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await waitFor(find.byType(ViewerScreen));
     await wait(const Duration(seconds: 1));

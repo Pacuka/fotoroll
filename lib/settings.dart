@@ -54,6 +54,8 @@ class AppSettings extends ChangeNotifier {
   ThemeMode themeMode = ThemeMode.system;
   String mapStyle = 'auto';
   SlideshowPrefs slideshow = SlideshowPrefs();
+  /// Closing the window keeps the app (and folder backup) running in the tray.
+  bool closeToTray = true;
 
   AppSettings({String? configDir})
       : _dir = configDir ?? appConfigDir();
@@ -70,11 +72,19 @@ class AppSettings extends ChangeNotifier {
       themeMode = ThemeMode.values.asNameMap()[j['theme']] ?? ThemeMode.system;
       mapStyle = j['mapStyle'] as String? ?? 'auto';
       slideshow = SlideshowPrefs.fromJson((j['slideshow'] as Map?)?.cast<String, dynamic>() ?? {});
+      closeToTray = j['closeToTray'] as bool? ?? true;
     } catch (_) {}
   }
 
-  Future<void> update({String? language, ThemeMode? themeMode, String? mapStyle, SlideshowPrefs? slideshow}) async {
+  Future<void> update({
+    String? language,
+    ThemeMode? themeMode,
+    String? mapStyle,
+    SlideshowPrefs? slideshow,
+    bool? closeToTray,
+  }) async {
     if (slideshow != null) this.slideshow = slideshow;
+    if (closeToTray != null) this.closeToTray = closeToTray;
     if (language != null) this.language = language;
     if (themeMode != null) this.themeMode = themeMode;
     if (mapStyle != null) this.mapStyle = mapStyle;
@@ -86,6 +96,7 @@ class AppSettings extends ChangeNotifier {
         'theme': this.themeMode.name,
         'mapStyle': this.mapStyle,
         'slideshow': this.slideshow.toJson(),
+        'closeToTray': this.closeToTray,
       }));
     } catch (_) {}
   }

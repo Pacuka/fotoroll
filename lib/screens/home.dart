@@ -1,11 +1,15 @@
 // App shell laid out like the Immich web client: top bar with search, upload and
 // account menu; a labelled sidebar; storage and server status at the bottom.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../api.dart';
 import '../backup.dart';
 import '../i18n.dart';
 import '../sources.dart';
+import '../settings.dart';
+import '../window.dart';
 import '../widgets/search_filter_dialog.dart';
 import '../widgets/brand.dart';
 import '../widgets/asset_actions.dart';
@@ -98,8 +102,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return service;
   }
 
+  StreamSubscription<String>? _trayActions;
+  StreamSubscription<List<String>>? _drops;
+
   @override
   void dispose() {
+    _trayActions?.cancel();
+    _drops?.cancel();
+    settings.removeListener(_applyDesktopSettings);
+    i18n.removeListener(_setupTray);
     _backup.then((s) => s.dispose()).catchError((_) {});
     _searchCtl.dispose();
     super.dispose();
@@ -109,7 +120,27 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadPrefs();
+    // Tray menu, close-to-tray and drag & drop upload (GTK runner).
+    _trayActions = trayActions.listen((action) async {
+      if (action == 'backup') (await _backup).runNow();
+    });
+    _drops = droppedFiles.listen((paths) async {
+      if (mounted && await uploadDropped(context, widget.api, paths)) _refresh();
+    });
+    _setupTray();
+    _applyDesktopSettings();
+    settings.addListener(_applyDesktopSettings);
+    i18n.addListener(_setupTray); // menu labels follow the language
   }
+
+  void _setupTray() => setTray([
+        ('open', t('linux_tray_open')),
+        ('backup', t('linux_backup_now')),
+        ('', ''),
+        ('quit', t('linux_tray_quit')),
+      ]);
+
+  void _applyDesktopSettings() => setCloseToTray(settings.closeToTray);
 
   Future<void> _loadPrefs() async {
     try {
@@ -182,7 +213,12 @@ class _HomeScreenState extends State<HomeScreen> {
               api: widget.api,
               backup: _backup,
             ),
-            Expanded(child: KeyedSubtree(key: ValueKey(_generation), child: _buildPage())),
+            Expanded(
+              child: Stack(fit: StackFit.expand, children: [
+                KeyedSubtree(key: ValueKey(_generation), child: _buildPage()),
+                const _DropHint(),
+              ]),
+            ),
           ]),
         ),
       ]),
@@ -911,6 +947,40 @@ class _StorageCardState extends State<_StorageCard> {
           },
         ),
       ]),
+    );
+  }
+}
+
+/// "Drop to upload" overlay while files are dragged over the window.
+class _DropHint extends StatelessWidget {
+  const _DropHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ValueListenableBuilder<bool>(
+      valueListenable: dragHovering,
+      builder: (context, on, _) => IgnorePointer(
+        child: AnimatedOpacity(
+          opacity: on ? 1 : 0,
+          duration: const Duration(milliseconds: 150),
+          child: Container(
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: scheme.primary, width: 3),
+            ),
+            child: Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.file_upload_outlined, size: 72, color: scheme.primary),
+                const SizedBox(height: 12),
+                Text(t('linux_drop_to_upload'), style: Theme.of(context).textTheme.titleLarge),
+              ]),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

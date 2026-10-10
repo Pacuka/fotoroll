@@ -15,6 +15,8 @@ import 'package:fotoroll/widgets/timeline_view.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:media_kit/media_kit.dart';
 
+import 'focus.dart';
+
 String id(int i) => '00000000-0000-4000-8000-${i.toString().padLeft(12, '0')}';
 
 Future<HttpServer> fakeServer() async {
@@ -87,6 +89,7 @@ void main() {
     Future<void> wait(Duration d) async {
       final end = DateTime.now().add(d);
       while (DateTime.now().isBefore(end)) {
+        keepViewFocused(tester);
         await tester.pump(const Duration(milliseconds: 16));
         await Future<void>.delayed(const Duration(milliseconds: 16));
       }

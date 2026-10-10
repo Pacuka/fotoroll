@@ -18,6 +18,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'fake_server.dart';
+import 'focus.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,7 @@ void main() {
     Future<void> wait(Duration d) async {
       final end = DateTime.now().add(d);
       while (DateTime.now().isBefore(end)) {
+        keepViewFocused(tester);
         await tester.pump(const Duration(milliseconds: 16));
         await Future<void>.delayed(const Duration(milliseconds: 16));
       }
@@ -75,6 +77,7 @@ void main() {
       return n;
     }
 
+    ignoreOsFocusLoss(tester);
     tester.view.physicalSize = const Size(1400, 800);
     tester.view.devicePixelRatio = 1;
     await tester.pumpWidget(RepaintBoundary(
@@ -111,9 +114,12 @@ void main() {
     await mouse.removePointer();
 
     // 180° × 90° slice: the crop comes from the original's GPano XMP.
+    focusView(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight); // video
-    await wait(const Duration(seconds: 1));
+    await waitFor(find.text('clip2.mp4')); // wait for each step: slow machines lag behind
+    focusView(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight); // pano180
+    await waitFor(find.text('pano180.jpg'));
     await waitFor(find.byType(PanoramaViewer));
     await waitFor(find.text('180° × 90°'));
     await wait(const Duration(seconds: 1));
@@ -128,6 +134,7 @@ void main() {
     expect(edge[corner] + edge[corner + 1] + edge[corner + 2], greaterThan(30), reason: 'no black outside the slice');
 
     // 360° video: mpv's v360 filter renders the view; dragging must turn it.
+    focusView(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight); // uid(4), 360 video
     await waitFor(find.byType(PanoramaVideoViewer));
     // Wait for the first (reprojected) frame: the middle of the screen stops being black.

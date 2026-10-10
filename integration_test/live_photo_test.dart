@@ -17,6 +17,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import 'fake_server.dart';
+import 'focus.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +40,7 @@ void main() {
     Future<void> wait(Duration d) async {
       final end = DateTime.now().add(d);
       while (DateTime.now().isBefore(end)) {
+        keepViewFocused(tester);
         await tester.pump(const Duration(milliseconds: 16));
         await Future<void>.delayed(const Duration(milliseconds: 16));
       }
@@ -52,6 +54,7 @@ void main() {
       expect(ok(), isTrue, reason: what);
     }
 
+    ignoreOsFocusLoss(tester);
     tester.view.physicalSize = const Size(1400, 800);
     tester.view.devicePixelRatio = 1;
     await tester.pumpWidget(MaterialApp(
@@ -67,7 +70,8 @@ void main() {
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await mouse.addPointer(location: tester.getCenter(tiles.at(1)));
     await until(() => HoverPreview.showing.value == uid(1), 'hover preview playing');
-    expect(server.requests, contains('GET /api/assets/${uid(101)}/video/playback'));
+    await until(() => server.requests.contains('GET /api/assets/${uid(101)}/video/playback'),
+        'the motion clip (not the photo) was requested');
     await mouse.moveTo(const Offset(5, 400));
     await wait(const Duration(milliseconds: 300));
     await mouse.removePointer();

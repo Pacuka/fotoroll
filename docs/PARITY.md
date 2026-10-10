@@ -94,8 +94,8 @@ Source of truth: `immich-app/immich@v3.1.0` (web routes in `web/src/routes`, mob
 ## Desktop extras (beyond the official clients)
 | Feature | Status |
 |---|---|
-| System tray, close to tray, autostart, single instance | ⬜ |
-| Drag & drop / paste to upload | ⬜ |
+| System tray (open / back up now / quit), close to tray, autostart hidden in the tray, single instance | ✅ |
+| Drag & drop files / folders to upload | ✅ (paste not yet) |
 | Hover video preview | ✅ |
 | Upload only on local network | ⬜ |
 | Packaging: .deb, .rpm, AppImage, Flatpak (Flathub), Snap, AUR | ⬜ |

@@ -16,6 +16,8 @@ class FakeImmich {
   final panoramaVideos = <String>{};
   /// Faces: id, assetId, personId (nullable), imageWidth/Height, boundingBox*.
   final faces = <Map<String, dynamic>>[];
+  /// File names received by POST /api/assets.
+  final uploads = <String>[];
   int _nextId = 700;
 
   /// Adds a face to [assetId] (box in a 320×240 image), optionally of [personId].
@@ -112,8 +114,10 @@ class FakeImmich {
     final res = req.response;
     final path = req.uri.path;
     final q = req.uri.queryParameters;
-    final raw = await utf8.decodeStream(req);
-    final body = raw.isEmpty ? null : jsonDecode(raw);
+    final bytes = await req.fold<List<int>>(<int>[], (a, b) => a..addAll(b));
+    final multipart = req.headers.contentType?.mimeType == 'multipart/form-data';
+    final raw = multipart ? latin1.decode(bytes) : utf8.decode(bytes, allowMalformed: true);
+    final body = raw.isEmpty || multipart ? null : jsonDecode(raw);
     requests.add('${req.method} $path');
     Object? out;
     var status = 200;
@@ -195,6 +199,12 @@ class FakeImmich {
       }
       if (body.containsKey('dateTimeOriginal')) a['localDateTime'] = body['dateTimeOriginal'];
       out = a;
+    } else if (path == '/api/assets' && m == 'POST') {
+      // Multipart upload: remember the file name.
+      final name = RegExp(r'filename="([^"]*)"').firstMatch(raw)?[1] ?? '?';
+      uploads.add(name);
+      status = 201;
+      out = {'id': uid(_nextId++), 'status': 'created'};
     } else if (path == '/api/assets' && m == 'PUT') {
       for (final id in body['ids']) {
         final a = asset(id);

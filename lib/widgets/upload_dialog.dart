@@ -30,10 +30,56 @@ Future<bool> pickAndUpload(BuildContext context, ImmichApi api) async {
     confirmButtonText: t('upload'),
   );
   if (files.isEmpty || !context.mounted) return false;
+  return _upload(context, api, [for (final f in files) f.path]);
+}
+
+/// Files and folders dropped on the window: folders are searched recursively for
+/// photos and videos the server accepts. Returns true if anything was uploaded.
+Future<bool> uploadDropped(BuildContext context, ImmichApi api, List<String> paths) async {
+  final Set<String> exts;
+  try {
+    exts = await api.mediaExtensions();
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${t('error')}: $e')));
+    }
+    return false;
+  }
+  final files = await mediaFilesIn(paths, exts);
+  if (!context.mounted) return false;
+  if (files.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('no_results'))));
+    return false;
+  }
+  return _upload(context, api, files);
+}
+
+/// Media files among [paths] (folders expanded, hidden entries skipped), sorted.
+Future<List<String>> mediaFilesIn(List<String> paths, Set<String> extensions) async {
+  final out = <String>[];
+  bool media(String path) => extensions.contains(p.extension(path).toLowerCase());
+  for (final path in paths) {
+    final type = await FileSystemEntity.type(path);
+    if (type == FileSystemEntityType.file) {
+      if (media(path)) out.add(path);
+    } else if (type == FileSystemEntityType.directory) {
+      await for (final e in Directory(path).list(recursive: true, followLinks: false).handleError((_) {})) {
+        if (e is File &&
+            media(e.path) &&
+            !p.split(p.relative(e.path, from: path)).any((s) => s.startsWith('.'))) {
+          out.add(e.path);
+        }
+      }
+    }
+  }
+  return out..sort();
+}
+
+Future<bool> _upload(BuildContext context, ImmichApi api, List<String> paths) async {
   final created = await showDialog<int>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _UploadDialog(api: api, paths: [for (final f in files) f.path]),
+    builder: (_) => _UploadDialog(api: api, paths: paths),
   );
   return (created ?? 0) > 0;
 }

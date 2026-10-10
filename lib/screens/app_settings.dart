@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../i18n.dart';
 import '../settings.dart';
+import '../window.dart';
 
 /// Language and theme controls (web: App Settings).
 class AppSettingsBody extends StatelessWidget {
@@ -47,6 +48,8 @@ class AppSettingsBody extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 8),
+        const _DesktopSettings(),
         const SizedBox(height: 8),
         FutureBuilder<String>(
           future: rootBundle.loadString('assets/i18n/VERSION').catchError((_) => ''),
@@ -117,6 +120,46 @@ class _LanguageDialogState extends State<_LanguageDialog> {
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text(t('cancel'))),
       ],
+    );
+  }
+}
+
+/// Tray and autostart (desktop only, no web equivalent).
+class _DesktopSettings extends StatefulWidget {
+  const _DesktopSettings();
+
+  @override
+  State<_DesktopSettings> createState() => _DesktopSettingsState();
+}
+
+class _DesktopSettingsState extends State<_DesktopSettings> {
+  bool _autostart = autostartEnabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: trayAvailable,
+      builder: (context, tray, _) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.vertical_align_bottom),
+          title: Text(t('linux_close_to_tray')),
+          subtitle: Text(tray ? t('linux_close_to_tray_desc') : t('linux_no_tray')),
+          value: tray && settings.closeToTray,
+          onChanged: tray ? (v) => settings.update(closeToTray: v) : null,
+        ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.power_settings_new),
+          title: Text(t('linux_autostart')),
+          subtitle: Text(t('linux_autostart_desc')),
+          value: _autostart,
+          onChanged: (v) async {
+            await setAutostart(v);
+            if (mounted) setState(() => _autostart = autostartEnabled);
+          },
+        ),
+      ]),
     );
   }
 }

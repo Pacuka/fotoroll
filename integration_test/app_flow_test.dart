@@ -19,6 +19,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'fake_server.dart';
+import 'focus.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +42,7 @@ void main() {
     Future<void> wait(Duration d) async {
       final end = DateTime.now().add(d);
       while (DateTime.now().isBefore(end)) {
+        keepViewFocused(tester);
         await tester.pump(const Duration(milliseconds: 16));
         await Future<void>.delayed(const Duration(milliseconds: 16));
       }
@@ -67,6 +69,7 @@ void main() {
       expect(errors, isEmpty, reason: 'errors on $where: $errors');
     }
 
+    ignoreOsFocusLoss(tester);
     tester.view.physicalSize = const Size(1600, 1000);
     tester.view.devicePixelRatio = 1;
     await tester.pumpWidget(MaterialApp(
@@ -86,6 +89,7 @@ void main() {
     await until(() => server.memories.first['seenAt'] != null, 'memory marked seen');
     await wait(const Duration(seconds: 6)); // first photo advances after 5 s
     noErrors('memory viewer');
+    focusView(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await waitFor(tiles);
     await wait(const Duration(milliseconds: 500));
@@ -137,6 +141,7 @@ void main() {
     await tester.tap(tiles.at(1));
     await waitFor(find.byType(ViewerScreen));
     await wait(const Duration(seconds: 1));
+    focusView(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyI);
     await waitFor(find.text('Info'));
     await waitFor(find.text('photo1.jpg'));
@@ -157,12 +162,14 @@ void main() {
     noErrors('viewer edits');
 
     // 3. Next item is a video: it must play in the viewer without errors.
+    focusView(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await waitFor(find.text('clip2.mp4'));
     await wait(const Duration(seconds: 3));
     noErrors('video playback');
     expect(server.requests.where((r) => r.endsWith('/video/playback')), isNotEmpty);
 
+    focusView(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await waitFor(tiles);
     await wait(const Duration(milliseconds: 500));

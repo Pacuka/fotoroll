@@ -19,6 +19,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'fake_server.dart';
+import 'focus.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +46,7 @@ void main() {
     Future<void> wait(Duration d) async {
       final end = DateTime.now().add(d);
       while (DateTime.now().isBefore(end)) {
+        keepViewFocused(tester);
         await tester.pump(const Duration(milliseconds: 16));
         await Future<void>.delayed(const Duration(milliseconds: 16));
       }
@@ -70,6 +72,7 @@ void main() {
       File('$dir/$name.png').writeAsBytesSync(png!.buffer.asUint8List());
     }
 
+    ignoreOsFocusLoss(tester);
     tester.view.physicalSize = const Size(1400, 800);
     tester.view.devicePixelRatio = 1;
     await tester.pumpWidget(RepaintBoundary(
@@ -80,6 +83,7 @@ void main() {
     await waitFor(tiles);
     await tester.tap(tiles.at(1));
     await waitFor(find.byType(ViewerScreen));
+    focusView(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyI);
     await waitFor(find.text('Anna'));
 
@@ -155,6 +159,7 @@ void main() {
     await until(() => !server.faces.any((f) => f['id'] == annaFace), 'face deleted');
 
     // Esc leaves the panel first, then the viewer.
+    focusView(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await wait(const Duration(milliseconds: 300));
     expect(find.byType(EditFacesPanel), findsNothing);

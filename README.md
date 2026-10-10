@@ -32,6 +32,10 @@ It aims to bring everything from the official web and mobile apps to the desktop
 - **Account settings** and **Administration** (users, libraries, jobs, all system settings, maintenance)
 - **Folder backup**: watches selected folders while the app runs and uploads new photos and videos
   (SHA-1 de-duplication, excluded subfolders; local files are never changed)
+- **Desktop integration**: drag & drop files or folders onto the window to upload, system tray
+  (open / back up now / quit), keep running in the tray when closed, start at login hidden in the tray,
+  single instance. The tray needs `libayatana-appindicator` (or the older `libappindicator-gtk3`); on
+  GNOME also the AppIndicator extension.
 - **Translations**: every language Immich itself ships
 
 See [docs/PARITY.md](docs/PARITY.md) for the full feature checklist against the official clients.
@@ -52,7 +56,7 @@ See [docs/PARITY.md](docs/PARITY.md) for the full feature checklist against the 
 ## Requirements
 
 - An Immich server, tested against **v3.1.0**
-- Runtime libraries: `gtk3`, `mpv` (libmpv), `libsecret`
+- Runtime libraries: `gtk3`, `mpv` (libmpv), `libsecret`; optional `libayatana-appindicator` for the tray
 - To build: [Flutter](https://docs.flutter.dev/get-started/install/linux) (stable), `clang`, `cmake`,
   `ninja`, `pkg-config`
 
