@@ -53,6 +53,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
   List<({double left, double top, double width, double height})> _highlight = const [];
   bool _editFaces = false;
   Rect? _tagBox; // fractions of the image while tagging a face
+  AssetFace? _hoverFace; // a named face under the mouse on the photo
   StreamSubscription<bool>? _motionDone;
 
   ImmichApi get api => widget.api;
@@ -109,6 +110,27 @@ class _ViewerScreenState extends State<ViewerScreen> {
     final faces = await _loadFaces();
     if (!mounted) return;
     setState(() => _highlight = [for (final f in faces) if (f.person?.id == personId) f.rel]);
+  }
+
+  /// Mouse over the photo: a known (named) face under the pointer gets its box
+  /// and name, like hovering a person in the info panel. [rel] is in fractions.
+  Future<void> _hoverPhoto(Offset? rel) async {
+    if (rel == null || _tagBox != null) {
+      if (_hoverFace != null) setState(() => _hoverFace = null);
+      return;
+    }
+    final faces = _faces ?? await _loadFaces();
+    if (!mounted) return;
+    AssetFace? hit;
+    for (final f in faces) {
+      final b = f.rel;
+      if ((f.person?.name.isNotEmpty ?? false) &&
+          rel.dx >= b.left && rel.dx <= b.left + b.width && rel.dy >= b.top && rel.dy <= b.top + b.height) {
+        hit = f;
+        break;
+      }
+    }
+    if (hit?.id != _hoverFace?.id) setState(() => _hoverFace = hit);
   }
 
   Future<void> _reloadDetail() async {
@@ -181,6 +203,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
       _highlight = const [];
       _editFaces = false;
       _tagBox = null;
+      _hoverFace = null;
       _albums = null;
       _transform.value = Matrix4.identity();
     });
@@ -384,19 +407,29 @@ class _ViewerScreenState extends State<ViewerScreen> {
     final framed = Center(
       child: AspectRatio(
         aspectRatio: a.ratio > 0 ? a.ratio : 1,
-        child: Stack(fit: StackFit.expand, children: [
-          _photo(a),
-          if (_highlight.isNotEmpty && _tagBox == null)
-            IgnorePointer(
-              child: CustomPaint(painter: FaceBoxesPainter(_highlight, Theme.of(context).colorScheme.primary)),
-            ),
-          if (_tagBox != null)
-            FaceTagBox(
-              key: ValueKey('tag${a.id}'),
-              initial: _tagBox!,
-              onChanged: (r) => _tagBox = r,
-            ),
-        ]),
+        child: LayoutBuilder(
+          builder: (context, c) => MouseRegion(
+            onHover: (e) => _hoverPhoto(Offset(e.localPosition.dx / c.maxWidth, e.localPosition.dy / c.maxHeight)),
+            onExit: (_) => _hoverPhoto(null),
+            child: Stack(fit: StackFit.expand, children: [
+              _photo(a),
+              if ((_highlight.isNotEmpty || _hoverFace != null) && _tagBox == null)
+                IgnorePointer(
+                  child: CustomPaint(
+                    painter: FaceBoxesPainter(
+                        [..._highlight, if (_hoverFace != null) _hoverFace!.rel], Theme.of(context).colorScheme.primary),
+                  ),
+                ),
+              if (_hoverFace != null && _tagBox == null) _faceLabel(_hoverFace!, c.biggest),
+              if (_tagBox != null)
+                FaceTagBox(
+                  key: ValueKey('tag${a.id}'),
+                  initial: _tagBox!,
+                  onChanged: (r) => _tagBox = r,
+                ),
+            ]),
+          ),
+        ),
       ),
     );
     // While a face box is drawn the zoom is reset and off, so drags reach the box
@@ -409,6 +442,27 @@ class _ViewerScreenState extends State<ViewerScreen> {
             : (Matrix4.identity()..scaleByDouble(2.5, 2.5, 2.5, 1));
       }),
       child: InteractiveViewer(transformationController: _transform, maxScale: 8, child: framed),
+    );
+  }
+
+  /// The name under a hovered face box (above it when the face is near the bottom).
+  Widget _faceLabel(AssetFace f, Size size) {
+    final b = f.rel;
+    final below = b.top + b.height < 0.9;
+    final scheme = Theme.of(context).colorScheme;
+    return Positioned(
+      left: b.left * size.width,
+      top: below ? (b.top + b.height) * size.height + 6 : null,
+      bottom: below ? null : (1 - b.top) * size.height + 6,
+      child: IgnorePointer(
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: scheme.primary, borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: Text(f.person!.name, style: TextStyle(color: scheme.onPrimary, fontWeight: FontWeight.w600)),
+          ),
+        ),
+      ),
     );
   }
 

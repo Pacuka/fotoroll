@@ -34,7 +34,7 @@ Source of truth: `immich-app/immich@v3.1.0` (web routes in `web/src/routes`, mob
 | Info panel: date, file, camera, place, people (age), albums, tags, rating | ✅ |
 | Favorite, archive, trash/restore, add to album, download, locked folder | ✅ |
 | Edit description, date/time, location (map picker), rating, tags | ✅ |
-| Faces: hover highlight, edit faces (reassign, new person, delete), tag a face by drawing a box | ✅ |
+| Faces: hover a face on the photo (box + name) or a person in the panel, edit faces (reassign, new person, delete), tag a face by drawing a box | ✅ |
 | Editor (crop, rotate, filters) | ⬜ |
 | Slideshow (shuffle / forward / backward, contain / cover / blurred, progress bar, fade, video autoplay, repeat, info overlay, full screen) | ✅ |
 | Activity / comments / likes (shared albums) | ⬜ |

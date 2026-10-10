@@ -112,6 +112,16 @@ void main() {
     await until(() => server.faces.firstWhere((f) => f['id'] == unassigned)['personId'] == bob, 'face → Bob');
     await waitFor(find.text('Bob')); // info panel reloaded
 
+    // 2b. Hovering Bob's face on the photo outlines it and shows his name.
+    final frame = tester.getRect(find.descendant(of: find.byType(ViewerScreen), matching: find.byType(AspectRatio)));
+    final bobsFace = Offset(frame.left + frame.width * 230 / 320, frame.top + frame.height * 90 / 240);
+    final namesBefore = find.text('Bob').evaluate().length;
+    await mouse.moveTo(bobsFace);
+    await until(() => find.text('Bob').evaluate().length == namesBefore + 1, 'name label on the photo');
+    await shot('faces_hover_photo');
+    await mouse.moveTo(Offset(frame.left + 10, frame.bottom - 10)); // no face there
+    await until(() => find.text('Bob').evaluate().length == namesBefore, 'label gone off the face');
+
     // 3. Tag a new face: draw the box, pick Anna, confirm.
     await tester.tap(find.byTooltip('Tag People'));
     await waitFor(find.byType(FaceTagBox));
