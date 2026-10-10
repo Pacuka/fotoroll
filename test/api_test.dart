@@ -199,7 +199,7 @@ void main() {
 
   test('search source follows nextPage', () async {
     final api = ImmichApi(Credentials(serverUrl: url, apiKey: 'k'));
-    final src = SearchSource((p) => api.smartSearch('kutya', page: p));
+    final src = SearchSource((p) => api.search(SearchFilter(query: 'kutya'), page: p));
     await src.loadMore();
     expect(src.length, 1);
     expect(src.hasMore, isTrue);

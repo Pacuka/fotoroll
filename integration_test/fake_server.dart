@@ -10,6 +10,7 @@ class FakeImmich {
   final clip = File('integration_test/fixtures/clip.mp4').readAsBytesSync();
   final thumb = File('integration_test/fixtures/thumb.jpg').readAsBytesSync();
   final requests = <String>[];
+  final searches = <(String, Map<String, dynamic>)>[]; // (endpoint, body)
 
   final me = {
     'id': uid(900), 'name': 'Tester', 'email': 't@example.com', 'isAdmin': true,
@@ -222,7 +223,19 @@ class FakeImmich {
         {'fieldName': 'exifInfo.city', 'items': [{'value': 'Budapest', 'data': assets[1]}]},
       ];
     } else if (path == '/api/search/smart' || path == '/api/search/metadata') {
-      out = {'albums': {'items': []}, 'assets': {'items': assets.take(3).toList(), 'nextPage': null, 'count': 3, 'total': 3}};
+      final b = (body as Map).cast<String, dynamic>();
+      searches.add((path, b));
+      final hits = assets.where((a) => b['type'] == null || a['type'] == b['type']).take(3).toList();
+      out = {'albums': {'items': []}, 'assets': {'items': hits, 'nextPage': null, 'count': hits.length, 'total': hits.length}};
+    } else if (path == '/api/search/suggestions') {
+      out = switch (q['type']) {
+        'country' => ['Austria', 'Hungary', null],
+        'state' => q['country'] == 'Hungary' ? ['Budapest'] : ['Vienna'],
+        'city' => ['Budapest'],
+        'camera-make' => ['Canon', 'Sony'],
+        'camera-model' => q['make'] == 'Sony' ? ['A7 IV'] : ['EOS R6'],
+        _ => <String>[],
+      };
     } else if (path == '/api/people') {
       out = {'people': people, 'total': people.length, 'hidden': 0, 'hasNextPage': false};
     } else if (match(r'/api/people/([\w-]+)') != null && m == 'PUT') {

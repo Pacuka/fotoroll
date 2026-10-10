@@ -24,7 +24,7 @@ Source of truth: `immich-app/immich@v3.1.0` (web routes in `web/src/routes`, mob
 | Places (all, by country) | `/places` | ✅ |
 | Recently added | `/recently-added` | ✅ |
 | Partner timeline | `/partners/[id]` | ✅ |
-| Search with filters (people, place, camera, date, type, OCR) | `/search` | 🟡 smart + filename only |
+| Search with filters (people, text modes incl. OCR & path, tags, place, camera, date, rating, type, display options) | `/search` | ✅ (no search history yet) |
 | Workflows | `/workflows` | ⬜ |
 
 ## Asset viewer

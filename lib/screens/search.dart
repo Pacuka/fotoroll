@@ -5,18 +5,12 @@ import '../i18n.dart';
 import '../sources.dart';
 import '../widgets/timeline_view.dart';
 
-/// Results for a query typed into the top search bar.
+/// Results for the top search bar / "Search options" filter.
 class SearchResults extends StatefulWidget {
   final ImmichApi api;
-  final String query;
-  final bool byFilename;
+  final SearchFilter filter;
 
-  const SearchResults({
-    super.key,
-    required this.api,
-    required this.query,
-    required this.byFilename,
-  });
+  const SearchResults({super.key, required this.api, required this.filter});
 
   @override
   State<SearchResults> createState() => _SearchResultsState();
@@ -34,7 +28,7 @@ class _SearchResultsState extends State<SearchResults> {
   @override
   void didUpdateWidget(SearchResults old) {
     super.didUpdateWidget(old);
-    if (old.query != widget.query || old.byFilename != widget.byFilename) _start();
+    if (!identical(old.filter, widget.filter)) _start();
   }
 
   @override
@@ -44,16 +38,13 @@ class _SearchResultsState extends State<SearchResults> {
   }
 
   void _start() {
-    final q = widget.query.trim();
+    final f = widget.filter.copy();
     final old = _source;
-    if (q.isEmpty) {
+    if (f.isEmpty) {
       _source = null;
     } else {
       final api = widget.api;
-      final byName = widget.byFilename;
-      _source = SearchSource((page) =>
-          byName ? api.filenameSearch(q, page: page) : api.smartSearch(q, page: page))
-        ..loadMore();
+      _source = SearchSource((page) => api.search(f, page: page))..loadMore();
     }
     // Dispose after the new source is in place so the old view can detach.
     WidgetsBinding.instance.addPostFrameCallback((_) => old?.dispose());

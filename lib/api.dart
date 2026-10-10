@@ -269,6 +269,96 @@ class _ProgressMultipartRequest extends http.MultipartRequest with http.Abortabl
   }
 }
 
+/// Text search modes of the web's search options (SearchTextSection).
+enum SearchMode { smart, filename, description, path, ocr }
+
+/// Everything the web's "Search options" dialog can filter on.
+class SearchFilter {
+  String query;
+  SearchMode mode;
+  Set<String> personIds;
+  Set<String> tagIds;
+  String? country, state, city;
+  String? make, model, lensModel;
+  DateTime? takenAfter, takenBefore; // whole days, local time
+  String? type; // IMAGE | VIDEO | null (all)
+  bool isFavorite, inArchive, notInAlbum;
+  int? rating;
+
+  SearchFilter({
+    this.query = '',
+    this.mode = SearchMode.smart,
+    Set<String>? personIds,
+    Set<String>? tagIds,
+    this.country,
+    this.state,
+    this.city,
+    this.make,
+    this.model,
+    this.lensModel,
+    this.takenAfter,
+    this.takenBefore,
+    this.type,
+    this.isFavorite = false,
+    this.inArchive = false,
+    this.notInAlbum = false,
+    this.rating,
+  })  : personIds = personIds ?? {},
+        tagIds = tagIds ?? {};
+
+  SearchFilter copy() => SearchFilter(
+        query: query, mode: mode, personIds: {...personIds}, tagIds: {...tagIds},
+        country: country, state: state, city: city, make: make, model: model, lensModel: lensModel,
+        takenAfter: takenAfter, takenBefore: takenBefore, type: type, isFavorite: isFavorite,
+        inArchive: inArchive, notInAlbum: notInAlbum, rating: rating,
+      );
+
+  bool get isEmpty => query.trim().isEmpty && filterCount == 0;
+
+  /// Filters besides the text query (shown as a badge on the options button).
+  int get filterCount => [
+        personIds.isNotEmpty, tagIds.isNotEmpty, country != null || state != null || city != null,
+        make != null || model != null || lensModel != null, takenAfter != null || takenBefore != null,
+        type != null, isFavorite, inArchive, notInAlbum, rating != null,
+      ].where((x) => x).length;
+
+  /// Like the web: a text query in "context" mode uses CLIP search, all else is metadata.
+  bool get isSmart => mode == SearchMode.smart && query.trim().isNotEmpty;
+
+  static String _day(DateTime d, {bool end = false}) {
+    final local = end ? DateTime(d.year, d.month, d.day, 23, 59, 59, 999) : DateTime(d.year, d.month, d.day);
+    return local.toUtc().toIso8601String();
+  }
+
+  Map<String, dynamic> toJson() {
+    final q = query.trim();
+    return {
+      if (q.isNotEmpty) ...switch (mode) {
+        SearchMode.smart => {'query': q},
+        SearchMode.filename => {'originalFileName': q},
+        SearchMode.description => {'description': q},
+        SearchMode.path => {'originalPath': q},
+        SearchMode.ocr => {'ocr': q},
+      },
+      if (personIds.isNotEmpty) 'personIds': personIds.toList(),
+      if (tagIds.isNotEmpty) 'tagIds': tagIds.toList(),
+      'country': ?country,
+      'state': ?state,
+      'city': ?city,
+      'make': ?make,
+      'model': ?model,
+      'lensModel': ?lensModel,
+      if (takenAfter != null) 'takenAfter': _day(takenAfter!),
+      if (takenBefore != null) 'takenBefore': _day(takenBefore!, end: true),
+      'type': ?type,
+      if (isFavorite) 'isFavorite': true,
+      if (notInAlbum) 'isNotInAlbum': true,
+      'visibility': inArchive ? 'archive' : 'timeline',
+      'rating': ?rating,
+    };
+  }
+}
+
 class SearchPage {
   final List<AssetRef> assets;
   final int? nextPage;
@@ -857,15 +947,29 @@ class ImmichApi {
   String personThumbnailUrl(Person p) =>
       _uri('/people/${p.id}/thumbnail', {'updatedAt': p.updatedAt}).toString();
 
-  Future<SearchPage> smartSearch(String query, {int page = 1, int size = 100}) async {
-    final j = await _postJson('/search/smart', {'query': query, 'page': page, 'size': size});
+  /// Search with the web's "Search options" filters (smart or metadata endpoint).
+  Future<SearchPage> search(SearchFilter f, {int page = 1, int size = 100}) async {
+    final j = await _postJson(f.isSmart ? '/search/smart' : '/search/metadata', {
+      ...f.toJson(),
+      'page': page,
+      'size': size,
+      if (f.isSmart) 'language': i18n.code,
+    });
     return _searchPage(j);
   }
 
-  Future<SearchPage> filenameSearch(String name, {int page = 1, int size = 100}) async {
-    final j = await _postJson(
-        '/search/metadata', {'originalFileName': name, 'page': page, 'size': size});
-    return _searchPage(j);
+  /// Values the server knows for a filter field: type is country, state, city,
+  /// camera-make, camera-model or camera-lens-model.
+  Future<List<String>> searchSuggestions(String type,
+      {String? country, String? state, String? make, String? model}) async {
+    final list = await _getJson('/search/suggestions', {
+      'type': type,
+      'country': country,
+      'state': state,
+      'make': make,
+      'model': model,
+    }) as List;
+    return list.whereType<String>().where((s) => s.isNotEmpty).toList()..sort();
   }
 
   SearchPage _searchPage(dynamic j) {

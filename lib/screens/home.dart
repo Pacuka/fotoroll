@@ -6,6 +6,7 @@ import '../api.dart';
 import '../backup.dart';
 import '../i18n.dart';
 import '../sources.dart';
+import '../widgets/search_filter_dialog.dart';
 import '../widgets/brand.dart';
 import '../widgets/asset_actions.dart';
 import '../widgets/loader.dart';
@@ -88,8 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic> _prefs = const {};
   late final Future<BackupService> _backup = _startBackup();
   final _searchCtl = TextEditingController();
-  bool _byFilename = false;
-  String _query = '';
+  SearchFilter _filter = SearchFilter(); // a new instance per search, so results reload
 
   Future<BackupService> _startBackup() async {
     final me = await _me;
@@ -127,11 +127,21 @@ class _HomeScreenState extends State<HomeScreen> {
   void _refresh() => setState(() => _generation++);
 
   void _search() {
-    final q = _searchCtl.text.trim();
-    if (q.isEmpty) return;
+    final f = _filter.copy()..query = _searchCtl.text.trim();
+    if (f.isEmpty) return;
     setState(() {
-      _query = q;
+      _filter = f;
       _page = _Page.search;
+    });
+  }
+
+  Future<void> _openFilters() async {
+    final f = await showSearchFilterDialog(context, widget.api, _filter.copy()..query = _searchCtl.text);
+    if (f == null || !mounted) return;
+    _searchCtl.text = f.query;
+    setState(() {
+      _filter = f;
+      if (!f.isEmpty) _page = _Page.search;
     });
   }
 
@@ -148,11 +158,14 @@ class _HomeScreenState extends State<HomeScreen> {
           api: widget.api,
           me: _me,
           searchCtl: _searchCtl,
-          byFilename: _byFilename,
+          byFilename: _filter.mode == SearchMode.filename,
+          filterCount: _filter.filterCount,
           onToggleFilename: () {
-            setState(() => _byFilename = !_byFilename);
+            setState(() => _filter = _filter.copy()
+              ..mode = _filter.mode == SearchMode.filename ? SearchMode.smart : SearchMode.filename);
             if (_page == _Page.search) _search();
           },
+          onFilters: _openFilters,
           onSearch: _search,
           onUpload: _upload,
           onRefresh: _refresh,
@@ -236,8 +249,15 @@ class _HomeScreenState extends State<HomeScreen> {
       case _Page.admin:
         return _Titled(t('administration'), child: AdminScreen(api: api));
       case _Page.search:
-        return _Titled(t('linux_search_title', {'query': _query}),
-            child: SearchResults(api: api, query: _query, byFilename: _byFilename));
+        return _Titled(
+          _filter.query.isEmpty ? t('search') : t('linux_search_title', {'query': _filter.query}),
+          action: TextButton.icon(
+            onPressed: _openFilters,
+            icon: const Icon(Icons.tune),
+            label: Text(t('search_options')),
+          ),
+          child: SearchResults(api: api, filter: _filter),
+        );
     }
   }
 }
@@ -511,7 +531,9 @@ class _TopBar extends StatelessWidget {
   final Future<Map<String, dynamic>> me;
   final TextEditingController searchCtl;
   final bool byFilename;
+  final int filterCount;
   final VoidCallback onToggleFilename;
+  final VoidCallback onFilters;
   final VoidCallback onSearch;
   final VoidCallback onUpload;
   final VoidCallback onRefresh;
@@ -523,7 +545,9 @@ class _TopBar extends StatelessWidget {
     required this.me,
     required this.searchCtl,
     required this.byFilename,
+    required this.filterCount,
     required this.onToggleFilename,
+    required this.onFilters,
     required this.onSearch,
     required this.onUpload,
     required this.onRefresh,
@@ -566,13 +590,25 @@ class _TopBar extends StatelessWidget {
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(t('filename')),
-                      selected: byFilename,
-                      showCheckmark: false,
-                      onSelected: (_) => onToggleFilename(),
-                      shape: const StadiumBorder(),
-                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      FilterChip(
+                        label: Text(t('filename')),
+                        selected: byFilename,
+                        showCheckmark: false,
+                        onSelected: (_) => onToggleFilename(),
+                        shape: const StadiumBorder(),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        tooltip: t('search_options'),
+                        onPressed: onFilters,
+                        icon: Badge(
+                          isLabelVisible: filterCount > 0,
+                          label: Text('$filterCount'),
+                          child: const Icon(Icons.tune),
+                        ),
+                      ),
+                    ]),
                   ),
                   filled: true,
                   fillColor: scheme.surfaceContainerHigh,

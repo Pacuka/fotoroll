@@ -178,6 +178,47 @@ void main() {
     noErrors('selection');
     await mouse.removePointer();
 
+    // 4b. Search: a typed query is a smart search; "Search options" filters use metadata search.
+    debugPrint('STEP search');
+    await tester.enterText(find.widgetWithText(TextField, 'Search your photos'), 'beach');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await until(() => server.searches.isNotEmpty, 'smart search sent');
+    expect(server.searches.last.$1, '/api/search/smart');
+    expect(server.searches.last.$2['query'], 'beach');
+    await waitFor(tiles);
+    noErrors('smart search');
+
+    await tester.tap(find.byTooltip('Search options').first);
+    await waitFor(find.text('Search options'));
+    await wait(const Duration(milliseconds: 800));
+    final dialog = find.byType(AlertDialog);
+    await tester.tap(find.descendant(of: dialog, matching: find.byType(PersonAvatar)).first);
+    await tester.pump();
+    await tester.tap(find.descendant(of: dialog, matching: find.text('Context')));
+    await tester.pump();
+    await tester.enterText(find.descendant(of: dialog, matching: find.byType(TextField)).at(1), '');
+    await tester.tap(find.descendant(of: dialog, matching: find.widgetWithText(DropdownMenu<String?>, 'Country')));
+    await wait(const Duration(milliseconds: 500));
+    await tester.tap(find.text('Hungary').last);
+    await wait(const Duration(milliseconds: 500));
+    await tester.ensureVisible(find.descendant(of: dialog, matching: find.text('Video')));
+    await tester.tap(find.descendant(of: dialog, matching: find.text('Video')));
+    await tester.pump();
+    final before = server.searches.length;
+    await tester.tap(find.descendant(of: dialog, matching: find.widgetWithText(FilledButton, 'Search')));
+    await until(() => server.searches.length > before, 'filtered search sent');
+    final (endpoint, body) = server.searches.last;
+    expect(endpoint, '/api/search/metadata');
+    expect(body['personIds'], [server.people.first['id']]);
+    expect(body['country'], 'Hungary');
+    expect(body['type'], 'VIDEO');
+    expect(body.containsKey('query'), isFalse);
+    await waitFor(tiles);
+    expect(find.text('3'), findsWidgets, reason: 'badge counts person, place, type');
+    noErrors('filtered search');
+    await tester.tap(find.text('Photos').first);
+    await waitFor(tiles);
+
     // 5. A narrow window (< 1100 px) collapses the sidebar to an icon rail; nothing may overflow.
     tester.view.physicalSize = const Size(1000, 800);
     await waitFor(find.byTooltip('Albums'));
