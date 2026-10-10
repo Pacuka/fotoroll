@@ -78,14 +78,17 @@ void main() {
     final api = ImmichApi(Credentials(serverUrl: 'http://127.0.0.1:${server.port}', apiKey: 'k'));
     final source = await TimelineSource.create(api);
 
-    // CI renders in software (llvmpipe), where video frames are slow to raster;
-    // there only UI-thread stalls count.
-    final softwareGl = Platform.environment['CI'] == 'true';
-    final slowFrames = <Duration>[];
+    // CI renders in software (llvmpipe), where video frames are slow to raster,
+    // and runs the debug (JIT) build on a slow CPU: there only UI-thread stalls
+    // count, after the first preview has warmed up.
+    final ci = Platform.environment['CI'] == 'true';
+    var counting = !ci;
+    var phase = 'first preview';
+    final slowFrames = <String>[];
     void onTimings(List<FrameTiming> timings) {
       for (final t in timings) {
-        final span = softwareGl ? t.buildDuration : t.totalSpan;
-        if (span > const Duration(milliseconds: 250)) slowFrames.add(span);
+        final span = ci ? t.buildDuration : t.totalSpan;
+        if (counting && span > const Duration(milliseconds: 250)) slowFrames.add('$phase: $span');
       }
     }
 
@@ -121,9 +124,12 @@ void main() {
       await mouse.moveTo(tester.getCenter(tiles.at(i + 1)));
       await wait(const Duration(milliseconds: 300));
       expect(HoverPreview.showing.value, isNull, reason: 'preview for tile $i should stop');
+      counting = true;
+      phase = 'after preview $i';
     }
 
     // Quick sweeps across many tiles must not leave anything playing.
+    phase = 'quick sweeps';
     for (var r = 0; r < 3; r++) {
       for (var i = 0; i < 12; i++) {
         await mouse.moveTo(tester.getCenter(tiles.at(i)));
