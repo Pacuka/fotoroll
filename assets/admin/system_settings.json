@@ -1,0 +1,1177 @@
+{
+ "version": "3.1.0",
+ "sections": [
+  {
+   "key": "authentication",
+   "title": "admin.authentication_settings",
+   "subtitle": "admin.authentication_settings_description",
+   "items": [
+    {
+     "group": "admin.oauth_settings",
+     "desc": "admin.oauth_settings_description"
+    },
+    {
+     "path": "oauth.enabled",
+     "kind": "bool",
+     "title": "admin.oauth_enable_description",
+     "desc": null
+    },
+    {
+     "path": "oauth.issuerUrl",
+     "kind": "string",
+     "title": null,
+     "desc": null,
+     "label": "issuer_url"
+    },
+    {
+     "path": "oauth.clientId",
+     "kind": "string",
+     "title": null,
+     "desc": null,
+     "label": "client_id"
+    },
+    {
+     "path": "oauth.clientSecret",
+     "kind": "string",
+     "title": null,
+     "desc": "admin.oauth_client_secret_description",
+     "label": "client_secret"
+    },
+    {
+     "path": "oauth.tokenEndpointAuthMethod",
+     "kind": "enum",
+     "title": null,
+     "desc": null,
+     "label": "token_endpoint_auth_method",
+     "options": [
+      "client_secret_post",
+      "client_secret_basic"
+     ]
+    },
+    {
+     "path": "oauth.scope",
+     "kind": "string",
+     "title": null,
+     "desc": null,
+     "label": "scope"
+    },
+    {
+     "path": "oauth.signingAlgorithm",
+     "kind": "string",
+     "title": null,
+     "desc": null,
+     "label": "id_token_signed_response_alg"
+    },
+    {
+     "path": "oauth.profileSigningAlgorithm",
+     "kind": "string",
+     "title": null,
+     "desc": null,
+     "label": "userinfo_signed_response_alg"
+    },
+    {
+     "path": "oauth.prompt",
+     "kind": "string",
+     "title": null,
+     "desc": "admin.oauth_prompt_description",
+     "label": "prompt"
+    },
+    {
+     "path": "oauth.endSessionEndpoint",
+     "kind": "string",
+     "title": null,
+     "desc": "admin.oauth_end_session_url_description",
+     "label": "end_session_endpoint"
+    },
+    {
+     "path": "oauth.timeout",
+     "kind": "int",
+     "title": "admin.oauth_timeout",
+     "desc": "admin.oauth_timeout_description"
+    },
+    {
+     "path": "oauth.allowInsecureRequests",
+     "kind": "bool",
+     "title": "admin.oauth_allow_insecure_requests",
+     "desc": "admin.oauth_allow_insecure_requests_description"
+    },
+    {
+     "path": "oauth.storageLabelClaim",
+     "kind": "string",
+     "title": "admin.oauth_storage_label_claim",
+     "desc": "admin.oauth_storage_label_claim_description"
+    },
+    {
+     "path": "oauth.roleClaim",
+     "kind": "string",
+     "title": "admin.oauth_role_claim",
+     "desc": "admin.oauth_role_claim_description"
+    },
+    {
+     "path": "oauth.storageQuotaClaim",
+     "kind": "string",
+     "title": "admin.oauth_storage_quota_claim",
+     "desc": "admin.oauth_storage_quota_claim_description"
+    },
+    {
+     "path": "oauth.defaultStorageQuota",
+     "kind": "int",
+     "title": "admin.oauth_storage_quota_default",
+     "desc": "admin.oauth_storage_quota_default_description"
+    },
+    {
+     "path": "oauth.buttonText",
+     "kind": "string",
+     "title": "admin.oauth_button_text",
+     "desc": null
+    },
+    {
+     "path": "oauth.autoRegister",
+     "kind": "bool",
+     "title": "admin.oauth_auto_register",
+     "desc": "admin.oauth_auto_register_description"
+    },
+    {
+     "path": "oauth.autoLaunch",
+     "kind": "bool",
+     "title": "admin.oauth_auto_launch",
+     "desc": "admin.oauth_auto_launch_description"
+    },
+    {
+     "path": "oauth.mobileRedirectUri",
+     "kind": "string",
+     "title": "admin.oauth_mobile_redirect_uri",
+     "desc": null
+    },
+    {
+     "group": "admin.password_settings",
+     "desc": "admin.password_settings_description"
+    },
+    {
+     "path": "passwordLogin.enabled",
+     "kind": "bool",
+     "title": "admin.password_enable_description",
+     "desc": null
+    }
+   ]
+  },
+  {
+   "key": "backup",
+   "title": "admin.backup_settings",
+   "subtitle": "admin.backup_settings_description",
+   "items": [
+    {
+     "path": "backup.database.enabled",
+     "kind": "bool",
+     "title": "admin.backup_database_enable_description",
+     "desc": null
+    },
+    {
+     "path": "backup.database.cronExpression",
+     "kind": "string",
+     "title": "admin.cron_expression_presets",
+     "desc": null
+    },
+    {
+     "path": "backup.database.keepLastAmount",
+     "kind": "int",
+     "title": "admin.backup_keep_last_amount",
+     "desc": null
+    }
+   ]
+  },
+  {
+   "key": "image",
+   "title": "admin.image_settings",
+   "subtitle": "admin.image_settings_description",
+   "items": [
+    {
+     "group": "admin.image_thumbnail_title",
+     "desc": "admin.image_thumbnail_description"
+    },
+    {
+     "path": "image.thumbnail.format",
+     "kind": "enum",
+     "title": "admin.image_format",
+     "desc": null,
+     "options": [
+      "jpeg",
+      "webp"
+     ]
+    },
+    {
+     "path": "image.thumbnail.size",
+     "kind": "enum",
+     "title": "admin.image_resolution",
+     "desc": null,
+     "options": [
+      {
+       "value": 1080,
+       "text": "1080p"
+      },
+      {
+       "value": 720,
+       "text": "720p"
+      },
+      {
+       "value": 480,
+       "text": "480p"
+      },
+      {
+       "value": 250,
+       "text": "250p"
+      },
+      {
+       "value": 200,
+       "text": "200p"
+      }
+     ]
+    },
+    {
+     "path": "image.thumbnail.quality",
+     "kind": "int",
+     "title": "admin.image_quality",
+     "desc": "admin.image_thumbnail_quality_description"
+    },
+    {
+     "group": "admin.image_preview_title",
+     "desc": "admin.image_preview_description"
+    },
+    {
+     "path": "image.preview.format",
+     "kind": "enum",
+     "title": "admin.image_format",
+     "desc": null,
+     "options": [
+      "jpeg",
+      "webp"
+     ]
+    },
+    {
+     "path": "image.preview.size",
+     "kind": "enum",
+     "title": "admin.image_resolution",
+     "desc": null,
+     "options": [
+      {
+       "value": 2160,
+       "text": "4K"
+      },
+      {
+       "value": 1440,
+       "text": "1440p"
+      },
+      {
+       "value": 1080,
+       "text": "1080p"
+      },
+      {
+       "value": 720,
+       "text": "720p"
+      }
+     ]
+    },
+    {
+     "path": "image.preview.quality",
+     "kind": "int",
+     "title": "admin.image_quality",
+     "desc": "admin.image_preview_quality_description"
+    },
+    {
+     "group": "admin.image_fullsize_title",
+     "desc": "admin.image_fullsize_description"
+    },
+    {
+     "path": "image.fullsize.format",
+     "kind": "enum",
+     "title": "admin.image_format",
+     "desc": null,
+     "options": [
+      "jpeg",
+      "webp"
+     ]
+    },
+    {
+     "path": "image.fullsize.quality",
+     "kind": "int",
+     "title": "admin.image_quality",
+     "desc": "admin.image_fullsize_quality_description"
+    }
+   ]
+  },
+  {
+   "key": "integrity-checks",
+   "title": "admin.integrity_checks_settings",
+   "subtitle": "admin.integrity_checks_settings_description",
+   "items": [
+    {
+     "group": "admin.integrity_checks_missing_files",
+     "desc": "admin.integrity_checks_missing_files_description"
+    },
+    {
+     "path": "integrityChecks.missingFiles.enabled",
+     "kind": "bool",
+     "title": "admin.integrity_checks_missing_files_enable_description",
+     "desc": null
+    },
+    {
+     "path": "integrityChecks.missingFiles.cronExpression",
+     "kind": "string",
+     "title": "admin.cron_expression",
+     "desc": null
+    },
+    {
+     "group": "admin.integrity_checks_untracked_files",
+     "desc": "admin.integrity_checks_untracked_files_description"
+    },
+    {
+     "path": "integrityChecks.untrackedFiles.enabled",
+     "kind": "bool",
+     "title": "admin.integrity_checks_untracked_files_enable_description",
+     "desc": null
+    },
+    {
+     "path": "integrityChecks.untrackedFiles.cronExpression",
+     "kind": "string",
+     "title": "admin.cron_expression",
+     "desc": null
+    },
+    {
+     "group": "admin.integrity_checks_checksum_files",
+     "desc": "admin.integrity_checks_checksum_files_description"
+    },
+    {
+     "path": "integrityChecks.checksumFiles.enabled",
+     "kind": "bool",
+     "title": "admin.integrity_checks_checksum_files_enable_description",
+     "desc": null
+    },
+    {
+     "path": "integrityChecks.checksumFiles.cronExpression",
+     "kind": "string",
+     "title": "admin.cron_expression",
+     "desc": null
+    },
+    {
+     "path": "integrityChecks.checksumFiles.timeLimit",
+     "kind": "int",
+     "title": "admin.integrity_checks_checksum_files_time_limit",
+     "desc": "admin.integrity_checks_checksum_files_time_limit_description"
+    },
+    {
+     "path": "integrityChecks.checksumFiles.percentageLimit",
+     "kind": "num",
+     "title": "admin.integrity_checks_checksum_files_percentage_limit",
+     "desc": "admin.integrity_checks_checksum_files_percentage_limit_description"
+    }
+   ]
+  },
+  {
+   "key": "job",
+   "title": "admin.job_settings",
+   "subtitle": "admin.job_settings_description",
+   "items": [
+    {
+     "path": "job[queueName].concurrency",
+     "kind": "string",
+     "title": "admin.job_concurrency",
+     "desc": null
+    }
+   ]
+  },
+  {
+   "key": "external-library",
+   "title": "admin.library_settings",
+   "subtitle": "admin.library_settings_description",
+   "items": [
+    {
+     "group": "admin.library_watching_settings",
+     "desc": "admin.library_watching_settings_description"
+    },
+    {
+     "path": "library.watch.enabled",
+     "kind": "bool",
+     "title": "admin.library_watching_enable_description",
+     "desc": null
+    },
+    {
+     "group": "admin.library_scanning",
+     "desc": "admin.library_scanning_description"
+    },
+    {
+     "path": "library.scan.enabled",
+     "kind": "bool",
+     "title": "admin.library_scanning_enable_description",
+     "desc": null
+    },
+    {
+     "path": "library.scan.cronExpression",
+     "kind": "string",
+     "title": "admin.cron_expression_presets",
+     "desc": null
+    }
+   ]
+  },
+  {
+   "key": "logging",
+   "title": "admin.logging_settings",
+   "subtitle": "admin.manage_log_settings",
+   "items": [
+    {
+     "path": "logging.enabled",
+     "kind": "bool",
+     "title": "admin.logging_enable_description",
+     "desc": null
+    },
+    {
+     "path": "logging.level",
+     "kind": "enum",
+     "title": "level",
+     "desc": null,
+     "options": [
+      "verbose",
+      "debug",
+      "log",
+      "warn",
+      "error",
+      "fatal"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "machine-learning",
+   "title": "admin.machine_learning_settings",
+   "subtitle": "admin.machine_learning_settings_description",
+   "items": [
+    {
+     "path": "machineLearning.enabled",
+     "kind": "bool",
+     "title": "admin.machine_learning_enabled",
+     "desc": "admin.machine_learning_enabled_description"
+    },
+    {
+     "path": "machineLearning.urls",
+     "kind": "list",
+     "title": "url",
+     "desc": "admin.machine_learning_url_description"
+    },
+    {
+     "group": "admin.machine_learning_availability_checks",
+     "desc": "admin.machine_learning_availability_checks_description"
+    },
+    {
+     "path": "machineLearning.availabilityChecks.enabled",
+     "kind": "bool",
+     "title": "admin.machine_learning_availability_checks_enabled",
+     "desc": null
+    },
+    {
+     "path": "machineLearning.availabilityChecks.interval",
+     "kind": "int",
+     "title": "admin.machine_learning_availability_checks_interval",
+     "desc": "admin.machine_learning_availability_checks_interval_description"
+    },
+    {
+     "path": "machineLearning.availabilityChecks.timeout",
+     "kind": "int",
+     "title": "admin.machine_learning_availability_checks_timeout",
+     "desc": "admin.machine_learning_availability_checks_timeout_description"
+    },
+    {
+     "group": "admin.machine_learning_smart_search",
+     "desc": "admin.machine_learning_smart_search_description"
+    },
+    {
+     "path": "machineLearning.clip.enabled",
+     "kind": "bool",
+     "title": "admin.machine_learning_smart_search_enabled",
+     "desc": "admin.machine_learning_smart_search_enabled_description"
+    },
+    {
+     "path": "machineLearning.clip.modelName",
+     "kind": "string",
+     "title": "admin.machine_learning_clip_model",
+     "desc": null
+    },
+    {
+     "group": "admin.machine_learning_duplicate_detection",
+     "desc": "admin.machine_learning_duplicate_detection_setting_description"
+    },
+    {
+     "path": "machineLearning.duplicateDetection.enabled",
+     "kind": "bool",
+     "title": "admin.machine_learning_duplicate_detection_enabled",
+     "desc": "admin.machine_learning_duplicate_detection_enabled_description"
+    },
+    {
+     "path": "machineLearning.duplicateDetection.maxDistance",
+     "kind": "num",
+     "title": "admin.machine_learning_max_detection_distance",
+     "desc": "admin.machine_learning_max_detection_distance_description"
+    },
+    {
+     "group": "admin.machine_learning_facial_recognition",
+     "desc": "admin.machine_learning_facial_recognition_description"
+    },
+    {
+     "path": "machineLearning.facialRecognition.enabled",
+     "kind": "bool",
+     "title": "admin.machine_learning_facial_recognition_setting",
+     "desc": "admin.machine_learning_facial_recognition_setting_description"
+    },
+    {
+     "path": "machineLearning.facialRecognition.modelName",
+     "kind": "enum",
+     "title": "admin.machine_learning_facial_recognition_model",
+     "desc": null,
+     "options": [
+      {
+       "value": "antelopev2",
+       "text": "antelopev2"
+      },
+      {
+       "value": "buffalo_l",
+       "text": "buffalo_l"
+      },
+      {
+       "value": "buffalo_m",
+       "text": "buffalo_m"
+      },
+      {
+       "value": "buffalo_s",
+       "text": "buffalo_s"
+      }
+     ]
+    },
+    {
+     "path": "machineLearning.facialRecognition.minScore",
+     "kind": "num",
+     "title": "admin.machine_learning_min_detection_score",
+     "desc": "admin.machine_learning_min_detection_score_description"
+    },
+    {
+     "path": "machineLearning.facialRecognition.maxDistance",
+     "kind": "num",
+     "title": "admin.machine_learning_max_recognition_distance",
+     "desc": "admin.machine_learning_max_recognition_distance_description"
+    },
+    {
+     "path": "machineLearning.facialRecognition.minFaces",
+     "kind": "int",
+     "title": "admin.machine_learning_min_recognized_faces",
+     "desc": "admin.machine_learning_min_recognized_faces_description"
+    },
+    {
+     "group": "admin.machine_learning_ocr",
+     "desc": "admin.machine_learning_ocr_description"
+    },
+    {
+     "path": "machineLearning.ocr.enabled",
+     "kind": "bool",
+     "title": "admin.machine_learning_ocr_enabled",
+     "desc": "admin.machine_learning_ocr_enabled_description"
+    },
+    {
+     "path": "machineLearning.ocr.modelName",
+     "kind": "string",
+     "title": "admin.machine_learning_ocr_model",
+     "desc": null
+    },
+    {
+     "path": "machineLearning.ocr.minDetectionScore",
+     "kind": "num",
+     "title": "admin.machine_learning_ocr_min_detection_score",
+     "desc": "admin.machine_learning_ocr_min_detection_score_description"
+    },
+    {
+     "path": "machineLearning.ocr.minRecognitionScore",
+     "kind": "num",
+     "title": "admin.machine_learning_ocr_min_recognition_score",
+     "desc": "admin.machine_learning_ocr_min_score_recognition_description"
+    },
+    {
+     "path": "machineLearning.ocr.maxResolution",
+     "kind": "int",
+     "title": "admin.machine_learning_ocr_max_resolution",
+     "desc": "admin.machine_learning_ocr_max_resolution_description"
+    }
+   ]
+  },
+  {
+   "key": "location",
+   "title": "admin.map_gps_settings",
+   "subtitle": "admin.map_gps_settings_description",
+   "items": [
+    {
+     "group": "admin.map_settings",
+     "desc": "admin.map_settings_description"
+    },
+    {
+     "path": "map.enabled",
+     "kind": "bool",
+     "title": "admin.map_enable_description",
+     "desc": "admin.map_implications"
+    },
+    {
+     "path": "map.lightStyle",
+     "kind": "string",
+     "title": "admin.map_light_style",
+     "desc": "admin.map_style_description"
+    },
+    {
+     "path": "map.darkStyle",
+     "kind": "string",
+     "title": "admin.map_dark_style",
+     "desc": "admin.map_style_description"
+    },
+    {
+     "group": "admin.map_reverse_geocoding_settings",
+     "desc": null
+    },
+    {
+     "path": "reverseGeocoding.enabled",
+     "kind": "bool",
+     "title": "admin.map_reverse_geocoding_enable_description",
+     "desc": null
+    }
+   ]
+  },
+  {
+   "key": "metadata",
+   "title": "admin.metadata_settings",
+   "subtitle": "admin.metadata_settings_description",
+   "items": [
+    {
+     "path": "metadata.faces.import",
+     "kind": "bool",
+     "title": "admin.metadata_faces_import_setting",
+     "desc": "admin.metadata_faces_import_setting_description"
+    }
+   ]
+  },
+  {
+   "key": "nightly-tasks",
+   "title": "admin.nightly_tasks_settings",
+   "subtitle": "admin.nightly_tasks_settings_description",
+   "items": [
+    {
+     "path": "nightlyTasks.startTime",
+     "kind": "string",
+     "title": "admin.nightly_tasks_start_time_setting",
+     "desc": "admin.nightly_tasks_start_time_setting_description"
+    },
+    {
+     "path": "nightlyTasks.databaseCleanup",
+     "kind": "bool",
+     "title": "admin.nightly_tasks_database_cleanup_setting",
+     "desc": "admin.nightly_tasks_database_cleanup_setting_description"
+    },
+    {
+     "path": "nightlyTasks.missingThumbnails",
+     "kind": "bool",
+     "title": "admin.nightly_tasks_missing_thumbnails_setting",
+     "desc": "admin.nightly_tasks_missing_thumbnails_setting_description"
+    },
+    {
+     "path": "nightlyTasks.clusterNewFaces",
+     "kind": "bool",
+     "title": "admin.nightly_tasks_cluster_new_faces_setting",
+     "desc": "admin.nightly_tasks_cluster_faces_setting_description"
+    },
+    {
+     "path": "nightlyTasks.generateMemories",
+     "kind": "bool",
+     "title": "admin.nightly_tasks_generate_memories_setting",
+     "desc": "admin.nightly_tasks_generate_memories_setting_description"
+    },
+    {
+     "path": "nightlyTasks.syncQuotaUsage",
+     "kind": "bool",
+     "title": "admin.nightly_tasks_sync_quota_usage_setting",
+     "desc": "admin.nightly_tasks_sync_quota_usage_setting_description"
+    }
+   ]
+  },
+  {
+   "key": "notifications",
+   "title": "admin.notification_settings",
+   "subtitle": "admin.notification_settings_description",
+   "items": [
+    {
+     "group": "email",
+     "desc": "admin.notification_email_setting_description"
+    },
+    {
+     "path": "notifications.smtp.enabled",
+     "kind": "bool",
+     "title": "admin.notification_enable_email_notifications",
+     "desc": null
+    },
+    {
+     "path": "notifications.smtp.transport.host",
+     "kind": "string",
+     "title": "host",
+     "desc": "admin.notification_email_host_description"
+    },
+    {
+     "path": "notifications.smtp.transport.port",
+     "kind": "int",
+     "title": "port",
+     "desc": "admin.notification_email_port_description"
+    },
+    {
+     "path": "notifications.smtp.transport.username",
+     "kind": "string",
+     "title": "username",
+     "desc": "admin.notification_email_username_description"
+    },
+    {
+     "path": "notifications.smtp.transport.password",
+     "kind": "string",
+     "title": "password",
+     "desc": "admin.notification_email_password_description"
+    },
+    {
+     "path": "notifications.smtp.transport.secure",
+     "kind": "bool",
+     "title": "admin.notification_email_secure",
+     "desc": "admin.notification_email_secure_description"
+    },
+    {
+     "path": "notifications.smtp.transport.ignoreCert",
+     "kind": "bool",
+     "title": "admin.notification_email_ignore_certificate_errors",
+     "desc": "admin.notification_email_ignore_certificate_errors_description"
+    },
+    {
+     "path": "notifications.smtp.from",
+     "kind": "string",
+     "title": "admin.notification_email_from_address",
+     "desc": "admin.notification_email_from_address_description"
+    }
+   ]
+  },
+  {
+   "key": "server",
+   "title": "admin.server_settings",
+   "subtitle": "admin.server_settings_description",
+   "items": [
+    {
+     "path": "server.externalDomain",
+     "kind": "string",
+     "title": "admin.server_external_domain_settings",
+     "desc": "admin.server_external_domain_settings_description"
+    },
+    {
+     "path": "server.loginPageMessage",
+     "kind": "string",
+     "title": "admin.server_welcome_message",
+     "desc": "admin.server_welcome_message_description"
+    },
+    {
+     "path": "server.publicUsers",
+     "kind": "bool",
+     "title": "admin.server_public_users",
+     "desc": "admin.server_public_users_description"
+    }
+   ]
+  },
+  {
+   "key": "storage-template",
+   "title": "admin.storage_template_settings",
+   "subtitle": "admin.storage_template_settings_description",
+   "items": [
+    {
+     "path": "storageTemplate.enabled",
+     "kind": "bool",
+     "title": "admin.storage_template_enable_description",
+     "desc": null
+    },
+    {
+     "path": "storageTemplate.hashVerificationEnabled",
+     "kind": "bool",
+     "title": "admin.storage_template_hash_verification_enabled",
+     "desc": "admin.storage_template_hash_verification_enabled_description"
+    },
+    {
+     "path": "storageTemplate.template",
+     "kind": "string",
+     "title": "template",
+     "desc": null
+    }
+   ]
+  },
+  {
+   "key": "theme",
+   "title": "admin.theme_settings",
+   "subtitle": "admin.theme_settings_description",
+   "items": [
+    {
+     "path": "theme.customCss",
+     "kind": "text",
+     "title": "admin.theme_custom_css_settings",
+     "desc": "admin.theme_custom_css_settings_description"
+    }
+   ]
+  },
+  {
+   "key": "trash",
+   "title": "admin.trash_settings",
+   "subtitle": "admin.trash_settings_description",
+   "items": [
+    {
+     "path": "trash.enabled",
+     "kind": "bool",
+     "title": "admin.trash_enabled_description",
+     "desc": null
+    },
+    {
+     "path": "trash.days",
+     "kind": "int",
+     "title": "admin.trash_number_of_days",
+     "desc": "admin.trash_number_of_days_description"
+    }
+   ]
+  },
+  {
+   "key": "user-settings",
+   "title": "admin.user_settings",
+   "subtitle": "admin.user_settings_description",
+   "items": [
+    {
+     "path": "user.deleteDelay",
+     "kind": "int",
+     "title": "admin.user_delete_delay_settings",
+     "desc": "admin.user_delete_delay_settings_description"
+    }
+   ]
+  },
+  {
+   "key": "version-check",
+   "title": "admin.version_check_settings",
+   "subtitle": "admin.version_check_settings_description",
+   "items": [
+    {
+     "path": "newVersionCheck.enabled",
+     "kind": "bool",
+     "title": "admin.version_check_enabled_description",
+     "desc": "admin.version_check_implications"
+    },
+    {
+     "path": "newVersionCheck.channel",
+     "kind": "enum",
+     "title": "admin.version_check_channel",
+     "desc": null,
+     "options": [
+      "stable",
+      "releaseCandidate"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "video-transcoding",
+   "title": "admin.transcoding_settings",
+   "subtitle": "admin.transcoding_settings_description",
+   "items": [
+    {
+     "group": "admin.transcoding_policy",
+     "desc": "admin.transcoding_policy_description"
+    },
+    {
+     "path": "ffmpeg.transcode",
+     "kind": "enum",
+     "title": "admin.transcoding_transcode_policy",
+     "desc": null,
+     "options": [
+      "all",
+      "optimal",
+      "bitrate",
+      "required",
+      "disabled"
+     ]
+    },
+    {
+     "path": "ffmpeg.acceptedVideoCodecs",
+     "kind": "list",
+     "title": "admin.transcoding_accepted_video_codecs",
+     "desc": null,
+     "options": [
+      "h264",
+      "hevc",
+      "vp9",
+      "av1"
+     ]
+    },
+    {
+     "path": "ffmpeg.acceptedAudioCodecs",
+     "kind": "list",
+     "title": "admin.transcoding_accepted_audio_codecs",
+     "desc": null,
+     "options": [
+      "mp3",
+      "aac",
+      "opus",
+      "pcm_s16le"
+     ]
+    },
+    {
+     "path": "ffmpeg.acceptedContainers",
+     "kind": "list",
+     "title": "admin.transcoding_accepted_containers",
+     "desc": null,
+     "options": [
+      "mov",
+      "mp4",
+      "ogg",
+      "webm"
+     ]
+    },
+    {
+     "group": "admin.transcoding_encoding_options",
+     "desc": "admin.transcoding_encoding_options_description"
+    },
+    {
+     "path": "ffmpeg.targetVideoCodec",
+     "kind": "enum",
+     "title": "admin.transcoding_video_codec",
+     "desc": null,
+     "options": [
+      "h264",
+      "hevc",
+      "vp9",
+      "av1"
+     ]
+    },
+    {
+     "path": "ffmpeg.targetAudioCodec",
+     "kind": "enum",
+     "title": "admin.transcoding_audio_codec",
+     "desc": null,
+     "options": [
+      "mp3",
+      "aac",
+      "opus",
+      "pcm_s16le"
+     ]
+    },
+    {
+     "path": "ffmpeg.targetResolution",
+     "kind": "enum",
+     "title": "admin.transcoding_target_resolution",
+     "desc": null,
+     "options": [
+      {
+       "value": "2160",
+       "text": "4k"
+      },
+      {
+       "value": "1440",
+       "text": "1440p"
+      },
+      {
+       "value": "1080",
+       "text": "1080p"
+      },
+      {
+       "value": "720",
+       "text": "720p"
+      },
+      {
+       "value": "480",
+       "text": "480p"
+      },
+      {
+       "value": "original",
+       "textKey": "original"
+      }
+     ]
+    },
+    {
+     "path": "ffmpeg.crf",
+     "kind": "int",
+     "title": "admin.transcoding_constant_rate_factor",
+     "desc": "admin.transcoding_constant_rate_factor_description"
+    },
+    {
+     "path": "ffmpeg.preset",
+     "kind": "enum",
+     "title": "admin.transcoding_preset_preset",
+     "desc": null,
+     "options": [
+      {
+       "value": "ultrafast",
+       "text": "ultrafast"
+      },
+      {
+       "value": "superfast",
+       "text": "superfast"
+      },
+      {
+       "value": "veryfast",
+       "text": "veryfast"
+      },
+      {
+       "value": "faster",
+       "text": "faster"
+      },
+      {
+       "value": "fast",
+       "text": "fast"
+      },
+      {
+       "value": "medium",
+       "text": "medium"
+      },
+      {
+       "value": "slow",
+       "text": "slow"
+      },
+      {
+       "value": "slower",
+       "text": "slower"
+      },
+      {
+       "value": "veryslow",
+       "text": "veryslow"
+      }
+     ]
+    },
+    {
+     "path": "ffmpeg.maxBitrate",
+     "kind": "string",
+     "title": "admin.transcoding_max_bitrate",
+     "desc": "admin.transcoding_max_bitrate_description"
+    },
+    {
+     "path": "ffmpeg.threads",
+     "kind": "int",
+     "title": "admin.transcoding_threads",
+     "desc": "admin.transcoding_threads_description"
+    },
+    {
+     "path": "ffmpeg.tonemap",
+     "kind": "enum",
+     "title": "admin.transcoding_tone_mapping",
+     "desc": null,
+     "options": [
+      "hable",
+      "mobius",
+      "reinhard",
+      "disabled"
+     ]
+    },
+    {
+     "path": "ffmpeg.twoPass",
+     "kind": "bool",
+     "title": "admin.transcoding_two_pass_encoding",
+     "desc": "admin.transcoding_two_pass_encoding_setting_description"
+    },
+    {
+     "group": "admin.transcoding_hardware_acceleration",
+     "desc": "admin.transcoding_hardware_acceleration_description"
+    },
+    {
+     "path": "ffmpeg.accel",
+     "kind": "enum",
+     "title": "admin.transcoding_acceleration_api",
+     "desc": null,
+     "options": [
+      "nvenc",
+      "qsv",
+      "vaapi",
+      "rkmpp",
+      "disabled"
+     ]
+    },
+    {
+     "path": "ffmpeg.accelDecode",
+     "kind": "bool",
+     "title": "admin.transcoding_hardware_decoding",
+     "desc": "admin.transcoding_hardware_decoding_setting_description"
+    },
+    {
+     "path": "ffmpeg.cqMode",
+     "kind": "enum",
+     "title": "admin.transcoding_constant_quality_mode",
+     "desc": null,
+     "options": [
+      "auto",
+      "cqp",
+      "icq"
+     ]
+    },
+    {
+     "path": "ffmpeg.temporalAQ",
+     "kind": "bool",
+     "title": "admin.transcoding_temporal_aq",
+     "desc": "admin.transcoding_temporal_aq_description"
+    },
+    {
+     "path": "ffmpeg.preferredHwDevice",
+     "kind": "string",
+     "title": "admin.transcoding_preferred_hardware_device",
+     "desc": "admin.transcoding_preferred_hardware_device_description"
+    },
+    {
+     "group": "advanced",
+     "desc": "admin.transcoding_advanced_options_description"
+    },
+    {
+     "path": "ffmpeg.bframes",
+     "kind": "int",
+     "title": "admin.transcoding_max_b_frames",
+     "desc": "admin.transcoding_max_b_frames_description"
+    },
+    {
+     "path": "ffmpeg.refs",
+     "kind": "int",
+     "title": "admin.transcoding_reference_frames",
+     "desc": "admin.transcoding_reference_frames_description"
+    },
+    {
+     "path": "ffmpeg.gopSize",
+     "kind": "int",
+     "title": "admin.transcoding_max_keyframe_interval",
+     "desc": "admin.transcoding_max_keyframe_interval_description"
+    },
+    {
+     "group": "admin.transcoding_realtime",
+     "desc": "admin.transcoding_realtime_description"
+    },
+    {
+     "path": "ffmpeg.realtime.enabled",
+     "kind": "bool",
+     "title": "admin.transcoding_realtime_enabled",
+     "desc": "admin.transcoding_realtime_enabled_description"
+    },
+    {
+     "path": "ffmpeg.realtime.videoCodecs",
+     "kind": "list",
+     "title": "admin.transcoding_realtime_video_codecs",
+     "desc": null,
+     "options": [
+      "h264",
+      "hevc",
+      "vp9",
+      "av1"
+     ]
+    },
+    {
+     "path": "ffmpeg.realtime.resolutions",
+     "kind": "list",
+     "title": "admin.transcoding_realtime_resolutions",
+     "desc": null,
+     "options": [
+      480,
+      720,
+      1080,
+      1440,
+      2160
+     ]
+    }
+   ]
+  }
+ ]
+}

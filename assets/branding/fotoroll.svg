@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFB347"/>
+      <stop offset="0.55" stop-color="#FF6B4A"/>
+      <stop offset="1" stop-color="#D9346C"/>
+    </linearGradient>
+    <linearGradient id="can" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2C2840"/>
+      <stop offset="0.45" stop-color="#3D3858"/>
+      <stop offset="1" stop-color="#1E1B2E"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7FD3FF"/>
+      <stop offset="1" stop-color="#D2F1FF"/>
+    </linearGradient>
+    <clipPath id="f1"><rect x="236" y="214" width="96" height="84" rx="8"/></clipPath>
+    <clipPath id="f2"><rect x="344" y="214" width="96" height="84" rx="8"/></clipPath>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- film strip -->
+  <rect x="180" y="196" width="276" height="120" rx="10" fill="#1E1B2E"/>
+  <g fill="#FFE9D6">
+    <rect x="240" y="201" width="14" height="8" rx="2"/><rect x="268" y="201" width="14" height="8" rx="2"/>
+    <rect x="296" y="201" width="14" height="8" rx="2"/><rect x="324" y="201" width="14" height="8" rx="2"/>
+    <rect x="352" y="201" width="14" height="8" rx="2"/><rect x="380" y="201" width="14" height="8" rx="2"/>
+    <rect x="408" y="201" width="14" height="8" rx="2"/><rect x="436" y="201" width="12" height="8" rx="2"/>
+    <rect x="240" y="303" width="14" height="8" rx="2"/><rect x="268" y="303" width="14" height="8" rx="2"/>
+    <rect x="296" y="303" width="14" height="8" rx="2"/><rect x="324" y="303" width="14" height="8" rx="2"/>
+    <rect x="352" y="303" width="14" height="8" rx="2"/><rect x="380" y="303" width="14" height="8" rx="2"/>
+    <rect x="408" y="303" width="14" height="8" rx="2"/><rect x="436" y="303" width="12" height="8" rx="2"/>
+  </g>
+  <g clip-path="url(#f1)">
+    <rect x="236" y="214" width="96" height="84" fill="url(#sky)"/>
+    <circle cx="306" cy="238" r="11" fill="#FFD23F"/>
+    <path d="M230 300 L268 252 L290 274 L306 260 L338 300 Z" fill="#2FB67C"/>
+  </g>
+  <g clip-path="url(#f2)">
+    <rect x="344" y="214" width="96" height="84" fill="#FFD9A8"/>
+    <circle cx="392" cy="300" r="34" fill="#FF8A5C"/>
+    <rect x="344" y="282" width="96" height="16" fill="#5B8DEF"/>
+  </g>
+  <!-- canister -->
+  <rect x="120" y="98" width="44" height="40" rx="8" fill="#2C2840"/>
+  <rect x="66" y="128" width="152" height="28" rx="12" fill="#3D3858"/>
+  <rect x="78" y="150" width="128" height="244" rx="20" fill="url(#can)"/>
+  <rect x="66" y="386" width="152" height="28" rx="12" fill="#3D3858"/>
+  <rect x="96" y="196" width="92" height="120" rx="10" fill="#FFE9D6"/>
+  <text x="142" y="270" font-family="sans-serif" font-weight="800" font-size="44" text-anchor="middle" fill="#FF6B4A">35</text>
+</svg>
