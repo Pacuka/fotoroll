@@ -66,6 +66,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  shaders:
+    - shaders/panorama.frag
   assets:
     - assets/i18n/
     - assets/i18n_app/

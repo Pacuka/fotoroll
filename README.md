@@ -15,6 +15,8 @@ It aims to bring everything from the official web and mobile apps to the desktop
 - **Photos timeline** like the web: justified rows, day headers, year scrubber, memory lane ("1 year ago")
 - **Viewer**: zoom, video playback (libmpv), keyboard navigation, editable info panel
   (description, date/time, location with map picker, rating, people, albums, tags)
+- **360° / 180° photo spheres** in an interactive panorama viewer (drag to look around, scroll to zoom;
+  partial panoramas use the photo's GPano data)
 - **Hover video preview** in the timeline
 - **Selection & bulk actions**: favorite, archive, trash / restore / delete, add to / remove from album,
   download as zip, move to locked folder
@@ -84,8 +86,9 @@ flutter test                     # unit + widget tests (fake v3.1.0 responses)
 tool/run_integration_tests.sh    # the real desktop app against an in-memory fake Immich server
 ```
 
-The integration tests open every page, use the viewer, play videos, edit metadata, select and
-favorite photos, and fail on any frame slower than 250 ms during hover previews.
+The integration tests open every page, use the viewer, play videos, edit metadata, search with filters,
+select and favorite photos, look around in 360° and 180° panoramas, and fail on any frame slower than
+250 ms during hover previews. Panorama test images come from `tool/make_pano_fixtures.py`.
 
 ## License
 

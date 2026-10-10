@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import '../api.dart';
 import '../i18n.dart';
 import '../sources.dart';
+import '../widgets/panorama_viewer.dart';
 import '../widgets/asset_actions.dart';
 import '../widgets/info_panel.dart';
 
@@ -186,6 +187,8 @@ class _ViewerScreenState extends State<ViewerScreen> {
                   children: [
                     if (a == null)
                       const Center(child: CircularProgressIndicator())
+                    else if (a.isImage && _isPanorama(a))
+                      PanoramaViewer(key: ValueKey(a.id), api: api, assetId: a.id)
                     else if (a.isImage)
                       _buildImage(a)
                     else
@@ -216,6 +219,15 @@ class _ViewerScreenState extends State<ViewerScreen> {
         ),
       ),
     );
+  }
+
+  /// From the timeline row, or the asset details once they arrive (search results).
+  bool _isPanorama(AssetRef a) {
+    if (a.isPanorama) return true;
+    final d = _detail;
+    return d != null &&
+        d['id'] == a.id &&
+        AssetRef.panoramaFrom(d['exifInfo']?['projectionType'] as String?, d['originalPath'] as String?);
   }
 
   Widget _buildImage(AssetRef a) {

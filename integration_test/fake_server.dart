@@ -11,6 +11,16 @@ class FakeImmich {
   final thumb = File('integration_test/fixtures/thumb.jpg').readAsBytesSync();
   final requests = <String>[];
   final searches = <(String, Map<String, dynamic>)>[]; // (endpoint, body)
+  /// Asset id -> image bytes served as its preview and original; marked EQUIRECTANGULAR.
+  final panoramas = <String, List<int>>{};
+
+  /// Turns photo [id] into a panorama backed by [fixture].
+  void makePanorama(String id, String fixture) {
+    panoramas[id] = File('integration_test/fixtures/$fixture').readAsBytesSync();
+    final a = asset(id);
+    a['originalFileName'] = fixture;
+    (a['exifInfo'] as Map)['projectionType'] = 'EQUIRECTANGULAR';
+  }
 
   final me = {
     'id': uid(900), 'name': 'Tester', 'email': 't@example.com', 'isAdmin': true,
@@ -86,6 +96,13 @@ class FakeImmich {
 
     RegExpMatch? match(String pattern) => RegExp('^$pattern\$').firstMatch(path);
 
+    final pano = panoramas[RegExp(r'/api/assets/([\w-]+)/').firstMatch(path)?[1]];
+    if (pano != null && (path.endsWith('/thumbnail') || path.endsWith('/original'))) {
+      res.headers.contentType = ContentType('image', 'jpeg');
+      res.headers.contentLength = pano.length;
+      res.add(pano);
+      return res.close();
+    }
     if (path.endsWith('/thumbnail') || path.endsWith('/profile-image')) {
       res.headers.contentType = ContentType('image', 'jpeg');
       res.add(thumb);
@@ -132,6 +149,7 @@ class FakeImmich {
         'duration': [for (final a in v) a['duration']],
         'fileCreatedAt': [for (final a in v) a['fileCreatedAt']],
         'localOffsetHours': [for (final _ in v) 0],
+        'projectionType': [for (final a in v) (a['exifInfo'] as Map)['projectionType']],
       };
     } else if (match(r'/api/assets/([\w-]+)') != null && m == 'GET') {
       out = asset(match(r'/api/assets/([\w-]+)')![1]!);

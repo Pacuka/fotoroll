@@ -40,7 +40,7 @@ Source of truth: `immich-app/immich@v3.1.0` (web routes in `web/src/routes`, mob
 | Activity / comments / likes (shared albums) | ⬜ |
 | Stacks | ⬜ |
 | Live/motion photo playback | ⬜ |
-| 360° panorama | ⬜ |
+| 360° / 180° panorama photos (GPano crop, drag / zoom, 360 badge on tiles) | ✅ (360° video not yet) |
 | Share (shared link) | ⬜ |
 
 ## Selection & bulk actions

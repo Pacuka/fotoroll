@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -48,6 +49,8 @@ class AssetRef {
   final int? durationMs;
   /// Capture date in the photo's own timezone (used for day grouping).
   final DateTime? localDate;
+  /// Equirectangular (360° / 180° photo sphere), shown in the panorama viewer.
+  final bool isPanorama;
 
   const AssetRef({
     required this.id,
@@ -56,6 +59,7 @@ class AssetRef {
     this.isFavorite = false,
     this.durationMs,
     this.localDate,
+    this.isPanorama = false,
   });
 
   AssetRef copyWith({bool? isFavorite}) => AssetRef(
@@ -65,7 +69,12 @@ class AssetRef {
         isFavorite: isFavorite ?? this.isFavorite,
         durationMs: durationMs,
         localDate: localDate,
+        isPanorama: isPanorama,
       );
+
+  /// Web: projectionType EQUIRECTANGULAR, or an Insta360 .insp file.
+  static bool panoramaFrom(String? projectionType, [String? path]) =>
+      projectionType?.toUpperCase() == 'EQUIRECTANGULAR' || (path?.toLowerCase().endsWith('.insp') ?? false);
 
   factory AssetRef.fromAssetJson(Map<String, dynamic> j) {
     final w = (j['width'] as num?)?.toDouble();
@@ -77,6 +86,8 @@ class AssetRef {
       isFavorite: j['isFavorite'] ?? false,
       durationMs: (j['duration'] as num?)?.toInt(),
       localDate: DateTime.tryParse(j['localDateTime'] ?? ''),
+      isPanorama: j['type'] == 'IMAGE' &&
+          panoramaFrom(j['exifInfo']?['projectionType'] as String?, j['originalPath'] as String?),
     );
   }
 }
@@ -852,6 +863,7 @@ class ImmichApi {
     final dur = (j['duration'] as List);
     final created = (j['fileCreatedAt'] as List?) ?? const [];
     final offset = (j['localOffsetHours'] as List?) ?? const [];
+    final projection = (j['projectionType'] as List?) ?? const [];
     DateTime? local(int i) {
       if (i >= created.length) return null;
       final utc = DateTime.tryParse('${created[i]}')?.toUtc();
@@ -870,6 +882,7 @@ class ImmichApi {
           isFavorite: fav[i] == true,
           durationMs: (dur[i] as num?)?.toInt(),
           localDate: local(i),
+          isPanorama: isImage[i] == true && i < projection.length && AssetRef.panoramaFrom(projection[i] as String?),
         ),
     ];
   }
@@ -1098,6 +1111,24 @@ class ImmichApi {
       got += n;
       if (total != null && total > 0) onProgress?.call(got / total);
     });
+  }
+
+  /// Whole file in memory (panoramas need the original's pixels and XMP).
+  Future<Uint8List> originalBytes(String id, {void Function(double)? onProgress}) =>
+      _bytes(http.Request('GET', _uri('/assets/$id/original'))..headers.addAll(headers), onProgress);
+
+  Future<Uint8List> previewBytes(String id) =>
+      _bytes(http.Request('GET', Uri.parse(thumbnailUrl(id, size: 'preview')))..headers.addAll(headers), null);
+
+  Future<Uint8List> _bytes(http.BaseRequest req, void Function(double)? onProgress) async {
+    final res = await _sendStream(req);
+    final total = res.contentLength;
+    final out = BytesBuilder(copy: false);
+    await for (final chunk in res.stream) {
+      out.add(chunk);
+      if (total != null && total > 0) onProgress?.call(out.length / total);
+    }
+    return out.takeBytes();
   }
 
   /// Sends a streamed download request; a non-200 response is drained (freeing the

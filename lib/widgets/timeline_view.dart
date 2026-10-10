@@ -490,6 +490,12 @@ class _TileState extends State<_Tile> {
                 const Icon(Icons.play_circle_outline, color: Colors.white, size: 22, shadows: shadow),
               ]),
             ),
+          if (a.isPanorama)
+            const Positioned(
+              right: 8,
+              top: 6,
+              child: Icon(Icons.threesixty, color: Colors.white, size: 22, shadows: shadow),
+            ),
           if (a.isFavorite)
             const Positioned(
               left: 8,
