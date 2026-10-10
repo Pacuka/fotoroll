@@ -63,11 +63,14 @@ void main() {
     expect(v.fov, lessThanOrEqualTo(v.maxFov));
   });
 
-  test('panorama flag from projection type or .insp, never for videos', () {
+  test('panorama flag from projection type or .insp (photos and 360° videos)', () {
     expect(AssetRef.panoramaFrom('EQUIRECTANGULAR'), isTrue);
     expect(AssetRef.panoramaFrom(null, '/x/IMG.INSP'), isTrue);
     expect(AssetRef.panoramaFrom(null, '/x/a.jpg'), isFalse);
     final video = AssetRef.fromAssetJson({'id': 'v', 'type': 'VIDEO', 'exifInfo': {'projectionType': 'EQUIRECTANGULAR'}});
-    expect(video.isPanorama, isFalse);
+    expect(video.isPanorama, isTrue);
+    expect(video.livePhotoVideoId, isNull);
+    final live = AssetRef.fromAssetJson({'id': 'p', 'type': 'IMAGE', 'livePhotoVideoId': 'v1'});
+    expect(live.livePhotoVideoId, 'v1');
   });
 }

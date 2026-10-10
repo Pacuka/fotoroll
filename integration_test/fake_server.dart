@@ -13,10 +13,15 @@ class FakeImmich {
   final searches = <(String, Map<String, dynamic>)>[]; // (endpoint, body)
   /// Asset id -> image bytes served as its preview and original; marked EQUIRECTANGULAR.
   final panoramas = <String, List<int>>{};
+  final panoramaVideos = <String>{};
 
-  /// Turns photo [id] into a panorama backed by [fixture].
+  /// Makes photo [id] a live photo whose motion part is video [videoId] (served as the test clip).
+  void makeLivePhoto(String id, String videoId) => asset(id)['livePhotoVideoId'] = videoId;
+
+  /// Turns photo or video [id] into a panorama backed by [fixture] (.jpg or .mp4).
   void makePanorama(String id, String fixture) {
     panoramas[id] = File('integration_test/fixtures/$fixture').readAsBytesSync();
+    if (fixture.endsWith('.mp4')) panoramaVideos.add(id);
     final a = asset(id);
     a['originalFileName'] = fixture;
     (a['exifInfo'] as Map)['projectionType'] = 'EQUIRECTANGULAR';
@@ -97,7 +102,15 @@ class FakeImmich {
     RegExpMatch? match(String pattern) => RegExp('^$pattern\$').firstMatch(path);
 
     final pano = panoramas[RegExp(r'/api/assets/([\w-]+)/').firstMatch(path)?[1]];
-    if (pano != null && (path.endsWith('/thumbnail') || path.endsWith('/original'))) {
+    if (pano != null && panoramaVideos.contains(RegExp(r'/api/assets/([\w-]+)/').firstMatch(path)?[1]) &&
+        path.endsWith('/video/playback')) {
+      res.headers.contentType = ContentType('video', 'mp4');
+      res.headers.contentLength = pano.length;
+      res.add(pano);
+      return res.close();
+    }
+    if (pano != null && !path.endsWith('/video/playback') &&
+        (path.endsWith('/thumbnail') || path.endsWith('/original'))) {
       res.headers.contentType = ContentType('image', 'jpeg');
       res.headers.contentLength = pano.length;
       res.add(pano);
@@ -150,6 +163,7 @@ class FakeImmich {
         'fileCreatedAt': [for (final a in v) a['fileCreatedAt']],
         'localOffsetHours': [for (final _ in v) 0],
         'projectionType': [for (final a in v) (a['exifInfo'] as Map)['projectionType']],
+        'livePhotoVideoId': [for (final a in v) a['livePhotoVideoId']],
       };
     } else if (match(r'/api/assets/([\w-]+)') != null && m == 'GET') {
       out = asset(match(r'/api/assets/([\w-]+)')![1]!);

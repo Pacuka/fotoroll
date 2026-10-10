@@ -399,25 +399,29 @@ class _TileState extends State<_Tile> {
   // Muted hover preview for videos, like the web's video thumbnails.
   Timer? _previewTimer;
 
+  /// Video to preview on hover: the video itself, or a live photo's motion clip.
+  String? get _previewVideo => widget.asset.isImage ? widget.asset.livePhotoVideoId : widget.asset.id;
+
   void _enter() {
     setState(() => _hover = true);
-    if (widget.asset.isImage) return;
+    final video = _previewVideo;
+    if (video == null) return;
     _previewTimer?.cancel();
     _previewTimer = Timer(const Duration(milliseconds: 400), () {
-      if (mounted && _hover) HoverPreview.play(widget.api, widget.asset.id);
+      if (mounted && _hover) HoverPreview.play(widget.api, widget.asset.id, videoId: video);
     });
   }
 
   void _exit() {
     _previewTimer?.cancel();
-    if (!widget.asset.isImage) HoverPreview.stop(widget.asset.id);
+    if (_previewVideo != null) HoverPreview.stop(widget.asset.id);
     if (mounted) setState(() => _hover = false);
   }
 
   @override
   void dispose() {
     _previewTimer?.cancel();
-    if (!widget.asset.isImage) HoverPreview.stop(widget.asset.id);
+    if (_previewVideo != null) HoverPreview.stop(widget.asset.id);
     super.dispose();
   }
 
@@ -453,7 +457,7 @@ class _TileState extends State<_Tile> {
               ),
             ),
           ),
-          if (!a.isImage && !widget.selected)
+          if (_previewVideo != null && !widget.selected)
             ValueListenableBuilder<String?>(
               valueListenable: HoverPreview.showing,
               builder: (context, id, _) => id != a.id
@@ -482,6 +486,10 @@ class _TileState extends State<_Tile> {
               right: 8,
               top: 6,
               child: Row(children: [
+                if (a.isPanorama) ...[
+                  const Icon(Icons.threesixty, color: Colors.white, size: 20, shadows: shadow),
+                  const SizedBox(width: 4),
+                ],
                 if (a.durationMs != null)
                   Text(formatDuration(a.durationMs!),
                       style: const TextStyle(
@@ -490,7 +498,13 @@ class _TileState extends State<_Tile> {
                 const Icon(Icons.play_circle_outline, color: Colors.white, size: 22, shadows: shadow),
               ]),
             ),
-          if (a.isPanorama)
+          if (a.livePhotoVideoId != null)
+            const Positioned(
+              right: 8,
+              top: 6,
+              child: Icon(Icons.motion_photos_on_outlined, color: Colors.white, size: 22, shadows: shadow),
+            ),
+          if (a.isPanorama && a.isImage)
             const Positioned(
               right: 8,
               top: 6,

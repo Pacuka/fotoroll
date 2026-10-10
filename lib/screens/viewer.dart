@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -45,17 +46,43 @@ class _ViewerScreenState extends State<ViewerScreen> {
   final _player = Player();
   late final _video = VideoController(_player);
   final _focus = FocusNode();
+  bool _motion = false; // a live photo's video is playing over the still
+  StreamSubscription<bool>? _motionDone;
 
   ImmichApi get api => widget.api;
 
   @override
   void initState() {
     super.initState();
+    _motionDone = _player.stream.completed.listen((done) {
+      if (done && _motion && mounted) setState(() => _motion = false); // back to the still, like the web
+    });
     _go(_index);
+  }
+
+  /// From the timeline row, or the asset details (search results lack it).
+  String? get _liveVideoId {
+    final a = _asset;
+    if (a == null || !a.isImage) return null;
+    final d = _detail;
+    return a.livePhotoVideoId ?? (d != null && d['id'] == a.id ? d['livePhotoVideoId'] as String? : null);
+  }
+
+  Future<void> _toggleMotion() async {
+    final id = _liveVideoId;
+    if (id == null) return;
+    if (_motion) {
+      setState(() => _motion = false);
+      await _player.stop();
+    } else {
+      setState(() => _motion = true);
+      await _player.open(Media(api.videoUrl(id), httpHeaders: api.headers));
+    }
   }
 
   @override
   void dispose() {
+    _motionDone?.cancel();
     _player.dispose();
     _transform.dispose();
     _focus.dispose();
@@ -77,6 +104,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
       _index = index;
       _asset = widget.source.at(index);
       _detail = null;
+      _motion = false;
       _albums = null;
       _transform.value = Matrix4.identity();
     });
@@ -84,8 +112,8 @@ class _ViewerScreenState extends State<ViewerScreen> {
     if (!mounted || _index != index || a == null) return;
     setState(() => _asset = a);
 
-    if (a.isImage) {
-      await _player.stop();
+    if (a.isImage || a.isPanorama) {
+      await _player.stop(); // 360° videos play in their own viewer
     } else {
       await _player.open(Media(api.videoUrl(a.id), httpHeaders: api.headers));
     }
@@ -94,6 +122,8 @@ class _ViewerScreenState extends State<ViewerScreen> {
     try {
       final d = await api.asset(a.id);
       if (mounted && _index == index) setState(() => _detail = d);
+      // Search results lack the projection; a 360° video found only now leaves the flat player.
+      if (mounted && _index == index && !a.isImage && _isPanorama(a)) await _player.stop();
     } catch (_) {}
     try {
       final albums = await api.albumsOf(a.id);
@@ -199,10 +229,14 @@ class _ViewerScreenState extends State<ViewerScreen> {
                   children: [
                     if (a == null)
                       const Center(child: CircularProgressIndicator())
+                    else if (a.isImage && _motion)
+                      Video(controller: _video, controls: NoVideoControls)
                     else if (a.isImage && _isPanorama(a))
                       PanoramaViewer(key: ValueKey(a.id), api: api, assetId: a.id)
                     else if (a.isImage)
                       _buildImage(a)
+                    else if (_isPanorama(a))
+                      PanoramaVideoViewer(key: ValueKey(a.id), api: api, assetId: a.id)
                     else
                       Video(controller: _video, controls: MaterialDesktopVideoControls),
                     _buildTopBar(),
@@ -303,6 +337,12 @@ class _ViewerScreenState extends State<ViewerScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            if (_liveVideoId != null)
+              IconButton(
+                tooltip: _motion ? t('stop_motion_photo') : t('play_motion_photo'),
+                icon: Icon(_motion ? Icons.motion_photos_pause_outlined : Icons.motion_photos_on_outlined),
+                onPressed: _toggleMotion,
+              ),
             IconButton(
               tooltip: t('slideshow'),
               icon: const Icon(Icons.slideshow_outlined),

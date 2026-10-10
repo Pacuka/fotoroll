@@ -2,6 +2,7 @@
 """Builds the panorama test images in integration_test/fixtures (needs ImageMagick):
 pano360.jpg  full 360x180 sphere, no XMP (the viewer must guess "full sphere")
 pano180.jpg  180x90 slice of a sphere with GPano XMP describing the crop
+pano360.mp4  3 s 360 video of pano360.jpg (needs ffmpeg)
 Both show a lat/long grid: 30 deg lines, the equator in red, compass labels."""
 import os, subprocess, sys, tempfile
 
@@ -42,4 +43,7 @@ grid(os.path.join(out, 'pano360.jpg'), 1600, 800, -180, 180, -90, 90, 'skyblue-s
 p = os.path.join(out, 'pano180.jpg')
 grid(p, 1200, 600, -90, 90, -45, 45, 'steelblue-sienna')
 add_gpano(p, 2400, 1200, 1200, 600, 600, 300)  # 180x90 deg, centred
+subprocess.check_call(['ffmpeg', '-v', 'error', '-y', '-loop', '1', '-i', os.path.join(out, 'pano360.jpg'),
+                       '-t', '3', '-r', '10', '-vf', 'scale=960:480', '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+                       '-crf', '30', os.path.join(out, 'pano360.mp4')])
 print('ok')

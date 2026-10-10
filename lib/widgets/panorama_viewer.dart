@@ -1,12 +1,15 @@
 // Interactive 360° / 180° panorama viewer (web: PhotoSphereViewer). Shows the
 // preview at once, then swaps in the original for full sharpness; the original's
 // GPano XMP says how much of the sphere a partial panorama covers.
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
 import '../api.dart';
 import '../i18n.dart';
@@ -250,5 +253,168 @@ class _PanoramaPainter extends CustomPainter {
       if (old._state[i] != _state[i]) return true;
     }
     return false;
+  }
+}
+
+/// 360° video (web: VideoPanoramaViewer). Video frames live in a platform texture
+/// the Dart shader can't read, so mpv's ffmpeg `v360` filter renders the
+/// perspective view; drags update its yaw / pitch / fov.
+class PanoramaVideoViewer extends StatefulWidget {
+  final ImmichApi api;
+  final String assetId;
+  const PanoramaVideoViewer({super.key, required this.api, required this.assetId});
+
+  @override
+  State<PanoramaVideoViewer> createState() => _PanoramaVideoViewerState();
+}
+
+class _PanoramaVideoViewerState extends State<PanoramaVideoViewer> {
+  final _player = Player(configuration: const PlayerConfiguration(logLevel: MPVLogLevel.warn));
+  // v360 runs on decoded frames in RAM: GPU decoding must copy frames back (auto-copy).
+  late final _controller =
+      VideoController(_player, configuration: const VideoControllerConfiguration(hwdec: 'auto-copy'));
+  final _view = PanoView(PanoCrop.full);
+  Size _size = Size.zero;
+  bool _filterSet = false;
+  Timer? _resize;
+  bool _sending = false, _dirty = false;
+  double _fovAtScaleStart = 1;
+
+  NativePlayer get _mpv => _player.platform as NativePlayer;
+
+  @override
+  void initState() {
+    super.initState();
+    _player.stream.log
+        .where((l) => l.level == 'error')
+        .listen((l) => debugPrint('mpv ${l.prefix}: ${l.text.trim()}'));
+    _open();
+  }
+
+  Future<void> _open() async {
+    // Keep the last frame at the end instead of going black; you can still look around.
+    await _mpv.setProperty('keep-open', 'yes');
+    // media_kit sizes the texture from the source video, not the filter output; let
+    // mpv fill it (the widget stretches it back to the view, which v360 targets).
+    await _mpv.setProperty('keepaspect', 'no');
+    await _player.open(Media(widget.api.videoUrl(widget.assetId), httpHeaders: widget.api.headers));
+  }
+
+  @override
+  void dispose() {
+    _resize?.cancel();
+    _player.dispose();
+    super.dispose();
+  }
+
+  double get _aspect => _size.height > 0 ? _size.width / _size.height : 16 / 9;
+  static double _deg(double rad) => rad * 180 / math.pi;
+
+  /// The v360 filter for the current camera and output size (capped at 1920 px
+  /// wide to keep the per-frame reprojection cheap).
+  String _filter() {
+    final w = math.min(1920, _size.width).round() & ~1;
+    final h = (w / _aspect).round() & ~1;
+    final v = _view;
+    return 'v360=input=e:output=flat:interp=linear:w=$w:h=$h'
+        ':yaw=${_deg(v.yaw).toStringAsFixed(2)}:pitch=${_deg(v.pitch).toStringAsFixed(2)}'
+        ':h_fov=${_deg(PanoView.hFov(v.fov, _aspect)).toStringAsFixed(2)}:v_fov=${_deg(v.fov).toStringAsFixed(2)}';
+  }
+
+  /// Applies the camera by replacing the filter. (mpv's vf-command is lost whenever
+  /// mpv rebuilds the chain, e.g. on seeks.) A new filter also re-renders the
+  /// current frame, so looking around works while paused. Bursts of drag events
+  /// are coalesced into one update at a time.
+  Future<void> _push() async {
+    if (_size.isEmpty) return;
+    if (_sending) {
+      _dirty = true;
+      return;
+    }
+    _sending = true;
+    try {
+      do {
+        _dirty = false;
+        await _mpv.setProperty('vf', _filter());
+        await Future<void>.delayed(const Duration(milliseconds: 40)); // ≤ 25 updates / s
+      } while (_dirty && mounted);
+    } catch (_) {
+    } finally {
+      _sending = false;
+    }
+  }
+
+  void _rotate(Offset delta) {
+    if (_size.height == 0) return;
+    final perPx = _view.fov / _size.height;
+    _view
+      ..yaw -= delta.dx * perPx
+      ..pitch += delta.dy * perPx
+      ..clamp(_aspect);
+    _push();
+  }
+
+  void _zoom(double factor) {
+    _view
+      ..fov *= factor
+      ..clamp(_aspect);
+    _push();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, c) {
+      if (_size != c.biggest) {
+        _size = c.biggest;
+        _view.clamp(_aspect);
+        _resize?.cancel();
+        _resize = Timer(Duration(milliseconds: _filterSet ? 300 : 0), () {
+          _filterSet = true;
+          _push();
+        });
+      }
+      return Stack(fit: StackFit.expand, children: [
+        Listener(
+          onPointerSignal: (e) {
+            if (e is PointerScrollEvent) _zoom(math.pow(1.0015, e.scrollDelta.dy).toDouble());
+          },
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onScaleStart: (_) => _fovAtScaleStart = _view.fov,
+            onScaleUpdate: (d) {
+              if (d.pointerCount > 1) {
+                _view
+                  ..fov = _fovAtScaleStart / d.scale
+                  ..clamp(_aspect);
+                _push();
+              } else {
+                _rotate(d.focalPointDelta);
+              }
+            },
+            onTap: _player.playOrPause,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.grab,
+              child: Video(controller: _controller, controls: NoVideoControls, fit: BoxFit.fill),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 16,
+          bottom: 16,
+          child: StreamBuilder<bool>(
+            stream: _player.stream.playing,
+            builder: (context, snap) => Row(children: [
+              const _Badge(label: '360°', progress: null),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                tooltip: snap.data == true ? t('pause') : t('play'),
+                icon: Icon(snap.data == true ? Icons.pause : Icons.play_arrow),
+                onPressed: _player.playOrPause,
+              ),
+            ]),
+          ),
+        ),
+      ]);
+    });
   }
 }

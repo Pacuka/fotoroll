@@ -39,8 +39,8 @@ Source of truth: `immich-app/immich@v3.1.0` (web routes in `web/src/routes`, mob
 | Slideshow (shuffle / forward / backward, contain / cover / blurred, progress bar, fade, video autoplay, repeat, info overlay, full screen) | ✅ |
 | Activity / comments / likes (shared albums) | ⬜ |
 | Stacks | ⬜ |
-| Live/motion photo playback | ⬜ |
-| 360° / 180° panorama photos (GPano crop, drag / zoom, 360 badge on tiles) | ✅ (360° video not yet) |
+| Live / motion photos (badge, hover playback, "Play Motion Photo" in the viewer) | ✅ |
+| 360° / 180° panorama photos (GPano crop, drag / zoom, 360 badge on tiles) and 360° videos (mpv v360) | ✅ |
 | Share (shared link) | ⬜ |
 
 ## Selection & bulk actions

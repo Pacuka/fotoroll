@@ -28,7 +28,8 @@ void main() {
     BackupService.overrideRoot = Directory.systemTemp.createTempSync('fotoroll_pano').path;
     final server = FakeImmich()
       ..makePanorama(uid(1), 'pano360.jpg')
-      ..makePanorama(uid(3), 'pano180.jpg');
+      ..makePanorama(uid(3), 'pano180.jpg')
+      ..makePanorama(uid(4), 'pano360.mp4');
     await server.start();
     final api = ImmichApi(Credentials(serverUrl: server.url, apiKey: 'k'));
 
@@ -84,7 +85,7 @@ void main() {
     final tiles = find.byWidgetPredicate((w) => w.runtimeType.toString() == '_Tile');
     await waitFor(tiles);
     await wait(const Duration(seconds: 1));
-    expect(find.byIcon(Icons.threesixty), findsNWidgets(2), reason: '360 badge on both panorama tiles');
+    expect(find.byIcon(Icons.threesixty), findsNWidgets(3), reason: '360 badge on the panorama tiles');
 
     // Full sphere: guessed from the 2:1 preview, then the original replaces it.
     await tester.tap(tiles.at(1));
@@ -125,6 +126,31 @@ void main() {
     final edge = await shot('pano180_edge');
     final corner = (20 * 1400 + 20) * 4; // a pixel near the top-left corner
     expect(edge[corner] + edge[corner + 1] + edge[corner + 2], greaterThan(30), reason: 'no black outside the slice');
+
+    // 360° video: mpv's v360 filter renders the view; dragging must turn it.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight); // uid(4), 360 video
+    await waitFor(find.byType(PanoramaVideoViewer));
+    // Wait for the first (reprojected) frame: the middle of the screen stops being black.
+    final mid = (400 * 1400 + 700) * 4;
+    var v1 = await shot('pano_video_start');
+    for (var i = 0; i < 25 && v1[mid] + v1[mid + 1] + v1[mid + 2] < 60; i++) {
+      await wait(const Duration(milliseconds: 200));
+      v1 = await shot('pano_video_start');
+    }
+    expect(v1[mid] + v1[mid + 1] + v1[mid + 2], greaterThan(60), reason: 'video frame visible');
+    // While playing.
+    await tester.dragFrom(center, const Offset(-400, 0));
+    await wait(const Duration(milliseconds: 500));
+    final v2 = await shot('pano_video_dragged');
+    expect(diff(v1, v2), greaterThan(50), reason: 'dragging turns the playing 360° video');
+    // After the end (paused on the last frame, which keep-open keeps on screen).
+    await wait(const Duration(seconds: 4));
+    final ended = await shot('pano_video_ended');
+    expect(ended[mid] + ended[mid + 1] + ended[mid + 2], greaterThan(60), reason: 'keep-open keeps the last frame');
+    await tester.dragFrom(center, const Offset(-400, 0));
+    await wait(const Duration(milliseconds: 800));
+    final v3 = await shot('pano_video_paused_dragged');
+    expect(diff(ended, v3), greaterThan(50), reason: 'dragging also turns a paused 360° video');
 
     expect(find.byType(ErrorWidget), findsNothing);
     expect(errors, isEmpty, reason: '$errors');

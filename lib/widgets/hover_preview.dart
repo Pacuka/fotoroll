@@ -30,11 +30,12 @@ class HoverPreview {
     _controller = VideoController(p);
   }
 
-  static Future<void> play(ImmichApi api, String assetId) async {
+  /// Plays [videoId] (default: the asset itself; a live photo passes its motion video).
+  static Future<void> play(ImmichApi api, String assetId, {String? videoId}) async {
     _ensure();
     _wanted = assetId;
     showing.value = null;
-    await _player!.open(Media(api.videoUrl(assetId), httpHeaders: api.headers));
+    await _player!.open(Media(api.videoUrl(videoId ?? assetId), httpHeaders: api.headers));
     if (_wanted != assetId) return; // mouse already left
     try {
       await _controller!.waitUntilFirstFrameRendered.timeout(const Duration(seconds: 5));

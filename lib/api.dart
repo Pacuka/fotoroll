@@ -49,8 +49,10 @@ class AssetRef {
   final int? durationMs;
   /// Capture date in the photo's own timezone (used for day grouping).
   final DateTime? localDate;
-  /// Equirectangular (360° / 180° photo sphere), shown in the panorama viewer.
+  /// Equirectangular (360° / 180° photo sphere or 360° video), shown in a panorama viewer.
   final bool isPanorama;
+  /// The short video of a live / motion photo.
+  final String? livePhotoVideoId;
 
   const AssetRef({
     required this.id,
@@ -60,6 +62,7 @@ class AssetRef {
     this.durationMs,
     this.localDate,
     this.isPanorama = false,
+    this.livePhotoVideoId,
   });
 
   AssetRef copyWith({bool? isFavorite}) => AssetRef(
@@ -70,6 +73,7 @@ class AssetRef {
         durationMs: durationMs,
         localDate: localDate,
         isPanorama: isPanorama,
+        livePhotoVideoId: livePhotoVideoId,
       );
 
   /// Web: projectionType EQUIRECTANGULAR, or an Insta360 .insp file.
@@ -86,8 +90,8 @@ class AssetRef {
       isFavorite: j['isFavorite'] ?? false,
       durationMs: (j['duration'] as num?)?.toInt(),
       localDate: DateTime.tryParse(j['localDateTime'] ?? ''),
-      isPanorama: j['type'] == 'IMAGE' &&
-          panoramaFrom(j['exifInfo']?['projectionType'] as String?, j['originalPath'] as String?),
+      isPanorama: panoramaFrom(j['exifInfo']?['projectionType'] as String?, j['originalPath'] as String?),
+      livePhotoVideoId: j['type'] == 'IMAGE' ? j['livePhotoVideoId'] as String? : null,
     );
   }
 }
@@ -864,6 +868,7 @@ class ImmichApi {
     final created = (j['fileCreatedAt'] as List?) ?? const [];
     final offset = (j['localOffsetHours'] as List?) ?? const [];
     final projection = (j['projectionType'] as List?) ?? const [];
+    final live = (j['livePhotoVideoId'] as List?) ?? const [];
     DateTime? local(int i) {
       if (i >= created.length) return null;
       final utc = DateTime.tryParse('${created[i]}')?.toUtc();
@@ -882,7 +887,8 @@ class ImmichApi {
           isFavorite: fav[i] == true,
           durationMs: (dur[i] as num?)?.toInt(),
           localDate: local(i),
-          isPanorama: isImage[i] == true && i < projection.length && AssetRef.panoramaFrom(projection[i] as String?),
+          isPanorama: i < projection.length && AssetRef.panoramaFrom(projection[i] as String?),
+          livePhotoVideoId: isImage[i] == true && i < live.length ? live[i] as String? : null,
         ),
     ];
   }
