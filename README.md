@@ -96,7 +96,6 @@ Where things live:
 | `~/.config/fotoroll` | app and backup settings |
 | `~/.local/share/fotoroll` | backup state (which files were already uploaded) |
 
-Settings and backup state from earlier builds (named "immich-linux") are moved over automatically on first start.
 
 ## Development
 
@@ -117,6 +116,13 @@ tool/run_integration_tests.sh    # the real desktop app against an in-memory fak
 The integration tests open every page, use the viewer, play videos, edit metadata, search with filters,
 select and favorite photos, look around in 360° and 180° panoramas, and fail on any frame slower than
 250 ms during hover previews. Panorama test images come from `tool/make_pano_fixtures.py`.
+
+## Credits
+
+- [Immich](https://immich.app) (AGPL-3.0): the server this app talks to; UI translations come from
+  its translation files, and the admin settings are generated from its web client
+- [Flutter](https://flutter.dev), [media_kit](https://github.com/media-kit/media-kit) / mpv / FFmpeg,
+  [flutter_map](https://github.com/fleaflet/flutter_map) with OpenStreetMap tiles
 
 ## License
 

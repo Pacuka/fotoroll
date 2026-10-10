@@ -109,7 +109,6 @@ void main() {
     await waitFor(tiles);
 
     // 1b. Folders: open a folder from the tree.
-    debugPrint('STEP folders');
     await tester.tap(find.text('Folders').first);
     await waitFor(find.text('photos'));
     await tester.tap(find.text('photos').first);
@@ -119,7 +118,6 @@ void main() {
     await waitFor(find.text('/photos/2025'));
     noErrors('folders');
 
-    debugPrint('STEP people');
     // 1c. People: rename a person from their page.
     await tester.tap(find.text('People').first);
     await wait(const Duration(seconds: 1));
@@ -186,7 +184,6 @@ void main() {
     await mouse.removePointer();
 
     // 4b. Search: a typed query is a smart search; "Search options" filters use metadata search.
-    debugPrint('STEP search');
     await tester.enterText(find.widgetWithText(TextField, 'Search your photos'), 'beach');
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await until(() => server.searches.isNotEmpty, 'smart search sent');
