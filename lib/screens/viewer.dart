@@ -9,6 +9,8 @@ import 'package:path/path.dart' as p;
 import '../api.dart';
 import '../i18n.dart';
 import '../sources.dart';
+import '../window.dart';
+import 'slideshow.dart';
 import '../widgets/panorama_viewer.dart';
 import '../widgets/asset_actions.dart';
 import '../widgets/info_panel.dart';
@@ -58,6 +60,15 @@ class _ViewerScreenState extends State<ViewerScreen> {
     _transform.dispose();
     _focus.dispose();
     super.dispose();
+  }
+
+  /// Plays a slideshow from here; afterwards the viewer shows where it stopped.
+  Future<void> _slideshow() async {
+    await _player.pause();
+    if (!mounted) return;
+    final end = await openSlideshow(context, api, widget.source, _index);
+    if (mounted && end != null && end != _index) _go(end);
+    _focus.requestFocus();
   }
 
   Future<void> _go(int index) async {
@@ -166,6 +177,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
         const SingleActivator(LogicalKeyboardKey.keyI): () =>
             setState(() => _showInfo = !_showInfo),
         const SingleActivator(LogicalKeyboardKey.keyD): _download,
+        const SingleActivator(LogicalKeyboardKey.f11): toggleFullScreen,
         if (widget.mode == TimelineMode.normal || widget.mode == TimelineMode.archive) ...{
           const SingleActivator(LogicalKeyboardKey.keyF): () => _act(
               _asset?.isFavorite == true ? AssetAction.unfavorite : AssetAction.favorite),
@@ -290,6 +302,11 @@ class _ViewerScreenState extends State<ViewerScreen> {
                 style: const TextStyle(color: Colors.white),
                 overflow: TextOverflow.ellipsis,
               ),
+            ),
+            IconButton(
+              tooltip: t('slideshow'),
+              icon: const Icon(Icons.slideshow_outlined),
+              onPressed: _slideshow,
             ),
             ..._actionButtons(),
             IconButton(

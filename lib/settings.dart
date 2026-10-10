@@ -7,16 +7,61 @@ import 'package:path/path.dart' as p;
 
 import 'app_dirs.dart';
 
+/// Slideshow options (web: SlideshowSettingsModal, kept in localStorage there).
+class SlideshowPrefs {
+  String direction; // forward | backward | shuffle
+  String look; // contain | cover | blurred
+  int seconds;
+  bool progressBar, transition, autoplay, repeat, overlay;
+  String overlayMode; // full | description
+
+  SlideshowPrefs({
+    this.direction = 'forward',
+    this.look = 'contain',
+    this.seconds = 5,
+    this.progressBar = true,
+    this.transition = true,
+    this.autoplay = true,
+    this.repeat = false,
+    this.overlay = false,
+    this.overlayMode = 'full',
+  });
+
+  factory SlideshowPrefs.fromJson(Map<String, dynamic> j) => SlideshowPrefs(
+        direction: j['direction'] as String? ?? 'forward',
+        look: j['look'] as String? ?? 'contain',
+        seconds: (j['seconds'] as num?)?.toInt().clamp(1, 600) ?? 5,
+        progressBar: j['progressBar'] as bool? ?? true,
+        transition: j['transition'] as bool? ?? true,
+        autoplay: j['autoplay'] as bool? ?? true,
+        repeat: j['repeat'] as bool? ?? false,
+        overlay: j['overlay'] as bool? ?? false,
+        overlayMode: j['overlayMode'] as String? ?? 'full',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'direction': direction, 'look': look, 'seconds': seconds, 'progressBar': progressBar,
+        'transition': transition, 'autoplay': autoplay, 'repeat': repeat, 'overlay': overlay,
+        'overlayMode': overlayMode,
+      };
+
+  SlideshowPrefs copy() => SlideshowPrefs.fromJson(toJson());
+}
+
 class AppSettings extends ChangeNotifier {
-  final String _dir;
+  String _dir;
   String language = 'en';
   ThemeMode themeMode = ThemeMode.system;
   String mapStyle = 'auto';
+  SlideshowPrefs slideshow = SlideshowPrefs();
 
   AppSettings({String? configDir})
       : _dir = configDir ?? appConfigDir();
 
   File get _file => File(p.join(_dir, 'settings.json'));
+
+  /// Tests point the global settings at a scratch folder, never the user's config.
+  void useDir(String dir) => _dir = dir;
 
   Future<void> load() async {
     try {
@@ -24,10 +69,12 @@ class AppSettings extends ChangeNotifier {
       language = j['language'] as String? ?? 'en';
       themeMode = ThemeMode.values.asNameMap()[j['theme']] ?? ThemeMode.system;
       mapStyle = j['mapStyle'] as String? ?? 'auto';
+      slideshow = SlideshowPrefs.fromJson((j['slideshow'] as Map?)?.cast<String, dynamic>() ?? {});
     } catch (_) {}
   }
 
-  Future<void> update({String? language, ThemeMode? themeMode, String? mapStyle}) async {
+  Future<void> update({String? language, ThemeMode? themeMode, String? mapStyle, SlideshowPrefs? slideshow}) async {
+    if (slideshow != null) this.slideshow = slideshow;
     if (language != null) this.language = language;
     if (themeMode != null) this.themeMode = themeMode;
     if (mapStyle != null) this.mapStyle = mapStyle;
@@ -38,6 +85,7 @@ class AppSettings extends ChangeNotifier {
         'language': this.language,
         'theme': this.themeMode.name,
         'mapStyle': this.mapStyle,
+        'slideshow': this.slideshow.toJson(),
       }));
     } catch (_) {}
   }

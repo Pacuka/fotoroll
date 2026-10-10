@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import '../api.dart';
 import '../i18n.dart';
 import '../sources.dart';
+import 'slideshow.dart';
 import '../widgets/asset_actions.dart';
 import '../widgets/loader.dart';
 import '../widgets/shared_link_dialog.dart';
@@ -414,6 +415,14 @@ class _AlbumScreenState extends State<AlbumScreen> {
         actions: [
           IconButton(
               tooltip: t('add_photos'), icon: const Icon(Icons.add_photo_alternate_outlined), onPressed: _addPhotos),
+          IconButton(
+            tooltip: t('slideshow'),
+            icon: const Icon(Icons.slideshow_outlined),
+            onPressed: () async {
+              final src = await _source;
+              if (context.mounted && src.length > 0) await openSlideshow(context, api, src, 0);
+            },
+          ),
           if (owner) IconButton(tooltip: t('share'), icon: const Icon(Icons.person_add_alt), onPressed: _share),
           IconButton(tooltip: t('download'), icon: const Icon(Icons.download_outlined), onPressed: _download),
           MenuAnchor(

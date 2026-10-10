@@ -17,6 +17,8 @@ It aims to bring everything from the official web and mobile apps to the desktop
   (description, date/time, location with map picker, rating, people, albums, tags)
 - **360° / 180° photo spheres** in an interactive panorama viewer (drag to look around, scroll to zoom;
   partial panoramas use the photo's GPano data)
+- **Slideshow** from the viewer or an album: shuffle / forward / backward, blurred-background look,
+  progress bar, fade, info overlay, repeat, full screen
 - **Hover video preview** in the timeline
 - **Selection & bulk actions**: favorite, archive, trash / restore / delete, add to / remove from album,
   download as zip, move to locked folder
@@ -41,6 +43,8 @@ See [docs/PARITY.md](docs/PARITY.md) for the full feature checklist against the 
 | Viewer | `I` | Info panel |
 | Viewer | `D` | Download |
 | Viewer | `F` / `A` / `Del` | Favorite / archive / trash |
+| Viewer, slideshow | `F11` | Full screen |
+| Slideshow | `Space` / `←` `→` / `Esc` | Pause / previous, next / exit |
 | Timeline | `Ctrl+A` / `Esc` / `Del` | Select all / clear selection / trash selected |
 
 ## Requirements

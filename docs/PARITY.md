@@ -36,7 +36,7 @@ Source of truth: `immich-app/immich@v3.1.0` (web routes in `web/src/routes`, mob
 | Edit description, date/time, location (map picker), rating, tags | ✅ |
 | Face tagging / edit people | ⬜ |
 | Editor (crop, rotate, filters) | ⬜ |
-| Slideshow | ⬜ |
+| Slideshow (shuffle / forward / backward, contain / cover / blurred, progress bar, fade, video autoplay, repeat, info overlay, full screen) | ✅ |
 | Activity / comments / likes (shared albums) | ⬜ |
 | Stacks | ⬜ |
 | Live/motion photo playback | ⬜ |
