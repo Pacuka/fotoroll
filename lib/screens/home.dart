@@ -762,7 +762,8 @@ class _Sidebar extends StatelessWidget {
           child: Tooltip(
             message: wide ? '' : e.label,
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: wide ? 24 : 26, vertical: 14),
+              // Narrow rail: 76 px minus the list's 16 px right padding leaves 60 = 18 + 24 + 18.
+              padding: EdgeInsets.symmetric(horizontal: wide ? 24 : 18, vertical: 14),
               child: Row(children: [
                 icon,
                 if (wide) ...[

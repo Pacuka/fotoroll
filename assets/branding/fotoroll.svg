@@ -1,50 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FFB347"/>
-      <stop offset="0.55" stop-color="#FF6B4A"/>
-      <stop offset="1" stop-color="#D9346C"/>
-    </linearGradient>
-    <linearGradient id="can" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#2C2840"/>
-      <stop offset="0.45" stop-color="#3D3858"/>
-      <stop offset="1" stop-color="#1E1B2E"/>
-    </linearGradient>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#7FD3FF"/>
-      <stop offset="1" stop-color="#D2F1FF"/>
-    </linearGradient>
-    <clipPath id="f1"><rect x="236" y="214" width="96" height="84" rx="8"/></clipPath>
-    <clipPath id="f2"><rect x="344" y="214" width="96" height="84" rx="8"/></clipPath>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <!-- film strip -->
-  <rect x="180" y="196" width="276" height="120" rx="10" fill="#1E1B2E"/>
-  <g fill="#FFE9D6">
-    <rect x="240" y="201" width="14" height="8" rx="2"/><rect x="268" y="201" width="14" height="8" rx="2"/>
-    <rect x="296" y="201" width="14" height="8" rx="2"/><rect x="324" y="201" width="14" height="8" rx="2"/>
-    <rect x="352" y="201" width="14" height="8" rx="2"/><rect x="380" y="201" width="14" height="8" rx="2"/>
-    <rect x="408" y="201" width="14" height="8" rx="2"/><rect x="436" y="201" width="12" height="8" rx="2"/>
-    <rect x="240" y="303" width="14" height="8" rx="2"/><rect x="268" y="303" width="14" height="8" rx="2"/>
-    <rect x="296" y="303" width="14" height="8" rx="2"/><rect x="324" y="303" width="14" height="8" rx="2"/>
-    <rect x="352" y="303" width="14" height="8" rx="2"/><rect x="380" y="303" width="14" height="8" rx="2"/>
-    <rect x="408" y="303" width="14" height="8" rx="2"/><rect x="436" y="303" width="12" height="8" rx="2"/>
-  </g>
-  <g clip-path="url(#f1)">
-    <rect x="236" y="214" width="96" height="84" fill="url(#sky)"/>
-    <circle cx="306" cy="238" r="11" fill="#FFD23F"/>
-    <path d="M230 300 L268 252 L290 274 L306 260 L338 300 Z" fill="#2FB67C"/>
-  </g>
-  <g clip-path="url(#f2)">
-    <rect x="344" y="214" width="96" height="84" fill="#FFD9A8"/>
-    <circle cx="392" cy="300" r="34" fill="#FF8A5C"/>
-    <rect x="344" y="282" width="96" height="16" fill="#5B8DEF"/>
-  </g>
-  <!-- canister -->
-  <rect x="120" y="98" width="44" height="40" rx="8" fill="#2C2840"/>
-  <rect x="66" y="128" width="152" height="28" rx="12" fill="#3D3858"/>
-  <rect x="78" y="150" width="128" height="244" rx="20" fill="url(#can)"/>
-  <rect x="66" y="386" width="152" height="28" rx="12" fill="#3D3858"/>
-  <rect x="96" y="196" width="92" height="120" rx="10" fill="#FFE9D6"/>
-  <text x="142" y="270" font-family="sans-serif" font-weight="800" font-size="44" text-anchor="middle" fill="#FF6B4A">35</text>
+  <defs><mask id="m"><rect width="512" height="512" fill="white"/><rect x="222.6" y="59.9" width="20" height="11" rx="3" transform="rotate(-7.0 232.6 65.4)" fill="black"/><rect x="272.7" y="60.4" width="20" height="11" rx="3" transform="rotate(8.0 282.7 65.9)" fill="black"/><rect x="321.0" y="73.8" width="20" height="11" rx="3" transform="rotate(23.0 331.0 79.3)" fill="black"/><rect x="420.0" y="169.4" width="20" height="11" rx="3" transform="rotate(65.0 430.0 174.9)" fill="black"/><rect x="435.1" y="217.2" width="20" height="11" rx="3" transform="rotate(80.0 445.1 222.7)" fill="black"/><rect x="437.3" y="267.2" width="20" height="11" rx="3" transform="rotate(95.0 447.3 272.7)" fill="black"/><rect x="376.9" y="390.9" width="20" height="11" rx="3" transform="rotate(137.0 386.9 396.4)" fill="black"/><rect x="336.1" y="420.0" width="20" height="11" rx="3" transform="rotate(152.0 346.1 425.5)" fill="black"/><rect x="289.2" y="437.6" width="20" height="11" rx="3" transform="rotate(167.0 299.2 443.1)" fill="black"/><rect x="152.9" y="418.4" width="20" height="11" rx="3" transform="rotate(209.0 162.9 423.9)" fill="black"/><rect x="112.6" y="388.6" width="20" height="11" rx="3" transform="rotate(224.0 122.6 394.1)" fill="black"/><rect x="81.4" y="349.4" width="20" height="11" rx="3" transform="rotate(239.0 91.4 354.9)" fill="black"/><rect x="57.5" y="213.9" width="20" height="11" rx="3" transform="rotate(281.0 67.5 219.4)" fill="black"/><rect x="73.4" y="166.3" width="20" height="11" rx="3" transform="rotate(296.0 83.4 171.8)" fill="black"/><rect x="101.1" y="124.5" width="20" height="11" rx="3" transform="rotate(311.0 111.1 130.0)" fill="black"/></mask><mask id="h"><rect width="512" height="512" fill="white"/><circle cx="256" cy="256" r="16" fill="black"/></mask></defs>
+  <g mask="url(#m)"><path d="M195.4,69.6 A196,196 0 0 1 365.6,93.5 L303.0,186.4 A84,84 0 0 0 230.0,176.1 Z" fill="#FA2921" stroke="#FA2921" stroke-width="30" stroke-linejoin="round"/><path d="M414.6,140.8 A196,196 0 0 1 444.4,310.0 L336.7,279.2 A84,84 0 0 0 324.0,206.6 Z" fill="#FFB400" stroke="#FFB400" stroke-width="30" stroke-linejoin="round"/><path d="M414.6,371.2 A196,196 0 0 1 262.8,451.9 L258.9,339.9 A84,84 0 0 0 324.0,305.4 Z" fill="#18C249" stroke="#18C249" stroke-width="30" stroke-linejoin="round"/><path d="M195.4,442.4 A196,196 0 0 1 71.8,323.0 L177.1,284.7 A84,84 0 0 0 230.0,335.9 Z" fill="#1E83F7" stroke="#1E83F7" stroke-width="30" stroke-linejoin="round"/><path d="M60.0,256.0 A196,196 0 0 1 135.3,101.5 L204.3,189.8 A84,84 0 0 0 172.0,256.0 Z" fill="#ED79B5" stroke="#ED79B5" stroke-width="30" stroke-linejoin="round"/></g>
+  <circle cx="256" cy="256" r="42" fill="#7A6FF0" mask="url(#h)"/>
 </svg>

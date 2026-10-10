@@ -178,6 +178,15 @@ void main() {
     noErrors('selection');
     await mouse.removePointer();
 
+    // 5. A narrow window (< 1100 px) collapses the sidebar to an icon rail; nothing may overflow.
+    tester.view.physicalSize = const Size(1000, 800);
+    await waitFor(find.byTooltip('Albums'));
+    await tester.tap(find.byTooltip('Albums').first);
+    await wait(const Duration(seconds: 1));
+    await tester.tap(find.byTooltip('Photos').first);
+    await waitFor(tiles);
+    noErrors('narrow window');
+
     FlutterError.onError = previous;
     await server.stop();
   });
