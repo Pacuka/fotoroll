@@ -4,4 +4,11 @@
 HERE="$(dirname "$(readlink -f "$0")")"
 export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export LIBMPV_LIBRARY_PATH="$(ls "$HERE"/usr/lib/libmpv.so.* 2>/dev/null | head -n 1)"
+# Image loaders for the bundled GTK (icons): the cache needs absolute paths, and
+# the AppImage is mounted somewhere new each time.
+CACHE_IN="$HERE/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.in"
+if [ -f "$CACHE_IN" ]; then
+  CACHE="${XDG_RUNTIME_DIR:-/tmp}/fotoroll-pixbuf-loaders.cache"
+  sed "s|@APPDIR@|$HERE|g" "$CACHE_IN" > "$CACHE" && export GDK_PIXBUF_MODULE_FILE="$CACHE"
+fi
 exec "$HERE/usr/bin/fotoroll" "$@"
