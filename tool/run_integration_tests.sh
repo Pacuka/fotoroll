@@ -6,7 +6,11 @@ cd "$(dirname "$0")/.."
 status=0
 for f in integration_test/*_test.dart; do
   echo "== $f"
-  if ! flutter test "$f" -d linux 2>&1 | grep -E "All tests passed|Some tests failed|Expected|Actual|reason"; then
+  if out=$(flutter test "$f" -d linux 2>&1) && grep -q "All tests passed" <<<"$out"; then
+    echo "All tests passed"
+  else
+    # The whole failure report (expectation, reason, stack), not just a summary.
+    sed -n '/EXCEPTION CAUGHT/,$p' <<<"$out" | grep . || tail -n 40 <<<"$out"
     status=1
   fi
 done

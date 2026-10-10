@@ -45,7 +45,9 @@ class _ViewerScreenState extends State<ViewerScreen> {
   bool _showInfo = false;
   final _transform = TransformationController();
   final _player = Player();
-  late final _video = VideoController(_player);
+  // Attached up front: a player opened before its controller exists has no video
+  // output, and mpv then refuses the clip ("No video or audio streams selected").
+  late final VideoController _video;
   final _focus = FocusNode();
   bool _motion = false; // a live photo's video is playing over the still
   // Faces: boxes to highlight, the "Edit faces" panel, and tagging a new face.
@@ -61,6 +63,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
   @override
   void initState() {
     super.initState();
+    _video = VideoController(_player);
     _motionDone = _player.stream.completed.listen((done) {
       if (done && _motion && mounted) setState(() => _motion = false); // back to the still, like the web
     });
