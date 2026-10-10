@@ -14,6 +14,26 @@ class FakeImmich {
   /// Asset id -> image bytes served as its preview and original; marked EQUIRECTANGULAR.
   final panoramas = <String, List<int>>{};
   final panoramaVideos = <String>{};
+  /// Faces: id, assetId, personId (nullable), imageWidth/Height, boundingBox*.
+  final faces = <Map<String, dynamic>>[];
+  int _nextId = 700;
+
+  /// Adds a face to [assetId] (box in a 320×240 image), optionally of [personId].
+  String addFace(String assetId, {String? personId, int x = 100, int y = 60, int w = 60, int h = 80}) {
+    final id = uid(_nextId++);
+    faces.add({'id': id, 'assetId': assetId, 'personId': personId, 'imageWidth': 320, 'imageHeight': 240,
+      'boundingBoxX1': x, 'boundingBoxY1': y, 'boundingBoxX2': x + w, 'boundingBoxY2': y + h});
+    _syncPeople(assetId);
+    return id;
+  }
+
+  Map<String, dynamic>? _person(String? id) => id == null ? null : people.where((p) => p['id'] == id).firstOrNull;
+
+  /// The asset's `people` follows its faces, like the server.
+  void _syncPeople(String assetId) {
+    final ids = {for (final f in faces) if (f['assetId'] == assetId && f['personId'] != null) f['personId']};
+    asset(assetId)['people'] = [for (final id in ids) ?_person(id as String)];
+  }
 
   /// Makes photo [id] a live photo whose motion part is video [videoId] (served as the test clip).
   void makeLivePhoto(String id, String videoId) => asset(id)['livePhotoVideoId'] = videoId;
@@ -268,6 +288,37 @@ class FakeImmich {
         'camera-model' => q['make'] == 'Sony' ? ['A7 IV'] : ['EOS R6'],
         _ => <String>[],
       };
+    } else if (path == '/api/faces' && m == 'GET') {
+      out = [
+        for (final f in faces)
+          if (f['assetId'] == q['id']) {...f, 'person': _person(f['personId'] as String?)},
+      ];
+    } else if (path == '/api/faces' && m == 'POST') {
+      final b = (body as Map).cast<String, dynamic>();
+      final id = uid(_nextId++);
+      faces.add({'id': id, 'assetId': b['assetId'], 'personId': b['personId'], 'imageWidth': b['imageWidth'],
+        'imageHeight': b['imageHeight'], 'boundingBoxX1': b['x'], 'boundingBoxY1': b['y'],
+        'boundingBoxX2': b['x'] + b['width'], 'boundingBoxY2': b['y'] + b['height']});
+      _syncPeople(b['assetId']);
+      out = null;
+      status = 201;
+    } else if (match(r'/api/faces/([\w-]+)') != null && m == 'PUT') {
+      final personId = match(r'/api/faces/([\w-]+)')![1];
+      final f = faces.firstWhere((x) => x['id'] == (body as Map)['id']);
+      f['personId'] = personId;
+      _syncPeople(f['assetId']);
+      out = _person(personId);
+    } else if (match(r'/api/faces/([\w-]+)') != null && m == 'DELETE') {
+      final f = faces.firstWhere((x) => x['id'] == match(r'/api/faces/([\w-]+)')![1]);
+      faces.remove(f);
+      _syncPeople(f['assetId']);
+      status = 204;
+    } else if (path == '/api/people' && m == 'POST') {
+      final p = {'id': uid(_nextId++), 'name': (body as Map?)?['name'] ?? '', 'birthDate': null, 'isHidden': false,
+        'isFavorite': false, 'thumbnailPath': '/x', 'updatedAt': '2026-01-01T00:00:00.000Z'};
+      people.add(p);
+      out = p;
+      status = 201;
     } else if (path == '/api/people') {
       out = {'people': people, 'total': people.length, 'hidden': 0, 'hasNextPage': false};
     } else if (match(r'/api/people/([\w-]+)') != null && m == 'PUT') {

@@ -20,6 +20,10 @@ class InfoPanel extends StatefulWidget {
   /// Called when an edit finishes, so the viewer can take keyboard focus back
   /// (arrow keys page again, like on the web).
   final VoidCallback? onEditingDone;
+  /// Hovering a person outlines their face on the photo (null = hover ended).
+  final ValueChanged<String?>? onHighlightPerson;
+  final VoidCallback? onEditFaces;
+  final VoidCallback? onTagFace;
 
   const InfoPanel({
     super.key,
@@ -29,6 +33,9 @@ class InfoPanel extends StatefulWidget {
     required this.canEdit,
     required this.onChanged,
     this.onEditingDone,
+    this.onHighlightPerson,
+    this.onEditFaces,
+    this.onTagFace,
   });
 
   @override
@@ -253,20 +260,39 @@ class _InfoPanelState extends State<InfoPanel> {
               ),
           ]),
         ),
-        if (people.isNotEmpty) ...[
-          _heading(t('linux_people_in_photo')),
+        if (people.isNotEmpty || (edit && widget.onTagFace != null)) ...[
+          Row(children: [
+            Expanded(child: _heading(t('linux_people_in_photo'))),
+            if (edit && widget.onTagFace != null)
+              IconButton(
+                tooltip: t('tag_people'),
+                icon: const Icon(Icons.face_retouching_natural, size: 20),
+                onPressed: widget.onTagFace,
+              ),
+            if (edit && widget.onEditFaces != null && people.isNotEmpty)
+              IconButton(
+                tooltip: t('edit_people'),
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                onPressed: widget.onEditFaces,
+              ),
+            const SizedBox(width: 8),
+          ]),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Wrap(spacing: 12, runSpacing: 12, children: [
               for (final person in people)
-                SizedBox(
-                  width: 84,
-                  child: PersonAvatar(
-                    api: api,
-                    person: person,
-                    size: 72,
-                    subtitle: person.birthDate == null || taken == null ? null : ageAt(person.birthDate!, taken),
-                    onTap: () => _push(PersonScreen(api: api, person: person)),
+                MouseRegion(
+                  onEnter: (_) => widget.onHighlightPerson?.call(person.id),
+                  onExit: (_) => widget.onHighlightPerson?.call(null),
+                  child: SizedBox(
+                    width: 84,
+                    child: PersonAvatar(
+                      api: api,
+                      person: person,
+                      size: 72,
+                      subtitle: person.birthDate == null || taken == null ? null : ageAt(person.birthDate!, taken),
+                      onTap: () => _push(PersonScreen(api: api, person: person)),
+                    ),
                   ),
                 ),
             ]),

@@ -169,6 +169,40 @@ class Partner {
         inTimeline = j['inTimeline'] ?? false;
 }
 
+/// A detected or manually tagged face on an asset (GET /faces?id=assetId).
+class AssetFace {
+  final String id;
+  final Person? person;
+  final int imageWidth, imageHeight;
+  final int x1, y1, x2, y2;
+  const AssetFace({
+    required this.id,
+    required this.person,
+    required this.imageWidth,
+    required this.imageHeight,
+    required this.x1,
+    required this.y1,
+    required this.x2,
+    required this.y2,
+  });
+
+  AssetFace.fromJson(Map<String, dynamic> j)
+      : id = j['id'],
+        person = j['person'] == null ? null : Person.fromJson(j['person'] as Map<String, dynamic>),
+        imageWidth = (j['imageWidth'] as num?)?.toInt() ?? 0,
+        imageHeight = (j['imageHeight'] as num?)?.toInt() ?? 0,
+        x1 = (j['boundingBoxX1'] as num).toInt(),
+        y1 = (j['boundingBoxY1'] as num).toInt(),
+        x2 = (j['boundingBoxX2'] as num).toInt(),
+        y2 = (j['boundingBoxY2'] as num).toInt();
+
+  /// The box as fractions (0..1) of the image, which is how the viewer draws it.
+  ({double left, double top, double width, double height}) get rel {
+    final w = imageWidth > 0 ? imageWidth : 1, h = imageHeight > 0 ? imageHeight : 1;
+    return (left: x1 / w, top: y1 / h, width: (x2 - x1) / w, height: (y2 - y1) / h);
+  }
+}
+
 class MapMarker {
   final String id;
   final double lat;
@@ -645,6 +679,42 @@ class ImmichApi {
         if (birthDate != null || clearBirthDate) 'birthDate': birthDate,
       }));
   /// Merges [otherIds] into person [id].
+  // ---- Faces (web: PersonSidePanel / FaceEditor) ----
+
+  Future<List<AssetFace>> faces(String assetId) async =>
+      ((await _getJson('/faces', {'id': assetId})) as List)
+          .map((e) => AssetFace.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+  /// Tags a face by hand. The box is given as fractions of the image; it is sent
+  /// in a virtual [_faceSpace]-pixel space with the image's aspect ratio, which the
+  /// server scales to the real image (the web uses the preview's pixel size).
+  Future<void> createFace(String assetId, String personId, double imageRatio,
+      {required double left, required double top, required double width, required double height}) {
+    const space = 4000;
+    final iw = imageRatio >= 1 ? space : (space * imageRatio).round();
+    final ih = imageRatio >= 1 ? (space / imageRatio).round() : space;
+    return _sendJson('POST', '/faces', {
+      'assetId': assetId,
+      'personId': personId,
+      'imageWidth': iw,
+      'imageHeight': ih,
+      'x': (left * iw).floor(),
+      'y': (top * ih).floor(),
+      'width': (width * iw).floor(),
+      'height': (height * ih).floor(),
+    });
+  }
+
+  /// Moves face [faceId] to person [personId] (PUT /faces/{personId}, body {id: faceId}).
+  Future<void> reassignFace(String faceId, String personId) =>
+      _sendJson('PUT', '/faces/$personId', {'id': faceId});
+
+  Future<void> deleteFace(String faceId) => _sendJson('DELETE', '/faces/$faceId', {'force': false});
+
+  Future<Person> createPerson({String? name}) async =>
+      Person.fromJson(await _sendJson('POST', '/people', {if (name != null && name.isNotEmpty) 'name': name}));
+
   Future<void> mergePeople(String id, List<String> otherIds) =>
       _sendJson('POST', '/people/$id/merge', {'ids': otherIds});
 

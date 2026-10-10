@@ -14,7 +14,8 @@ It aims to bring everything from the official web and mobile apps to the desktop
 - **Login** with email + password or an API key (stored in the system keyring via libsecret)
 - **Photos timeline** like the web: justified rows, day headers, year scrubber, memory lane ("1 year ago")
 - **Viewer**: zoom, video playback (libmpv), keyboard navigation, editable info panel
-  (description, date/time, location with map picker, rating, people, albums, tags)
+  (description, date/time, location with map picker, rating, people, albums, tags); face editing:
+  highlight, reassign or delete faces, tag a new face by drawing a box
 - **360° / 180° photo spheres and 360° videos** in an interactive panorama viewer (drag to look around,
   scroll to zoom; partial panoramas use the photo's GPano data)
 - **Live / motion photos**: badge and hover playback in the timeline, "Play Motion Photo" in the viewer

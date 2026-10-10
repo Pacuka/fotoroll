@@ -12,6 +12,7 @@ import '../i18n.dart';
 import '../sources.dart';
 import '../window.dart';
 import 'slideshow.dart';
+import '../widgets/faces.dart';
 import '../widgets/panorama_viewer.dart';
 import '../widgets/asset_actions.dart';
 import '../widgets/info_panel.dart';
@@ -47,6 +48,11 @@ class _ViewerScreenState extends State<ViewerScreen> {
   late final _video = VideoController(_player);
   final _focus = FocusNode();
   bool _motion = false; // a live photo's video is playing over the still
+  // Faces: boxes to highlight, the "Edit faces" panel, and tagging a new face.
+  List<AssetFace>? _faces;
+  List<({double left, double top, double width, double height})> _highlight = const [];
+  bool _editFaces = false;
+  Rect? _tagBox; // fractions of the image while tagging a face
   StreamSubscription<bool>? _motionDone;
 
   ImmichApi get api => widget.api;
@@ -89,6 +95,72 @@ class _ViewerScreenState extends State<ViewerScreen> {
     super.dispose();
   }
 
+  Future<List<AssetFace>> _loadFaces() async {
+    final id = _asset?.id;
+    if (id == null) return const [];
+    final faces = _faces ?? await api.faces(id);
+    if (mounted && _asset?.id == id) _faces = faces;
+    return faces;
+  }
+
+  /// Hovering a person in the info panel outlines their face(s) on the photo.
+  Future<void> _highlightPerson(String? personId) async {
+    if (personId == null) return setState(() => _highlight = const []);
+    final faces = await _loadFaces();
+    if (!mounted) return;
+    setState(() => _highlight = [for (final f in faces) if (f.person?.id == personId) f.rel]);
+  }
+
+  Future<void> _reloadDetail() async {
+    final a = _asset;
+    if (a == null) return;
+    _faces = null;
+    try {
+      final d = await api.asset(a.id);
+      if (mounted && _asset?.id == a.id) setState(() => _detail = d);
+    } catch (_) {}
+  }
+
+  void _startTagging() {
+    _transform.value = Matrix4.identity();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar(); // it would cover the tagging bar
+    setState(() {
+      _showInfo = true;
+      _editFaces = false;
+      _tagBox = const Rect.fromLTWH(0.375, 0.3, 0.25, 0.3);
+    });
+  }
+
+  Future<void> _finishTagging() async {
+    final a = _asset, box = _tagBox;
+    if (a == null || box == null) return;
+    final pick = await showPersonPicker(context, api, title: t('select_person_to_tag'));
+    if (pick == null || !mounted) return;
+    final name = pick.person?.name ?? pick.newName ?? '';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(name.isEmpty ? t('confirm_tag_face_unnamed') : t('confirm_tag_face', {'name': name})),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('tag_face'))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final personId = await personIdFor(api, pick);
+      await api.createFace(a.id, personId, a.ratio,
+          left: box.left, top: box.top, width: box.width, height: box.height);
+      if (mounted) setState(() => _tagBox = null);
+      await _reloadDetail();
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('${t('error')}: $e')));
+    }
+    _focus.requestFocus();
+  }
+
   /// Plays a slideshow from here; afterwards the viewer shows where it stopped.
   Future<void> _slideshow() async {
     await _player.pause();
@@ -105,6 +177,10 @@ class _ViewerScreenState extends State<ViewerScreen> {
       _asset = widget.source.at(index);
       _detail = null;
       _motion = false;
+      _faces = null;
+      _highlight = const [];
+      _editFaces = false;
+      _tagBox = null;
       _albums = null;
       _transform.value = Matrix4.identity();
     });
@@ -203,7 +279,17 @@ class _ViewerScreenState extends State<ViewerScreen> {
       bindings: {
         const SingleActivator(LogicalKeyboardKey.arrowRight): () => _go(_index + 1),
         const SingleActivator(LogicalKeyboardKey.arrowLeft): () => _go(_index - 1),
-        const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop(),
+        const SingleActivator(LogicalKeyboardKey.escape): () {
+          // Esc first leaves face tagging / editing, then the viewer.
+          if (_tagBox != null || _editFaces) {
+            setState(() {
+              _tagBox = null;
+              _editFaces = false;
+            });
+          } else {
+            Navigator.of(context).maybePop();
+          }
+        },
         const SingleActivator(LogicalKeyboardKey.keyI): () =>
             setState(() => _showInfo = !_showInfo),
         const SingleActivator(LogicalKeyboardKey.keyD): _download,
@@ -240,6 +326,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
                     else
                       Video(controller: _video, controls: MaterialDesktopVideoControls),
                     _buildTopBar(),
+                    if (_tagBox != null) _taggingBar(),
                     if (_index > 0)
                       _navButton(Alignment.centerLeft, Icons.chevron_left, () => _go(_index - 1)),
                     if (_index < widget.source.length - 1)
@@ -251,14 +338,30 @@ class _ViewerScreenState extends State<ViewerScreen> {
               if (_showInfo)
                 SizedBox(
                   width: 340,
-                  child: InfoPanel(
-                    api: api,
-                    detail: _detail,
-                    albums: _albums,
-                    canEdit: widget.mode == TimelineMode.normal || widget.mode == TimelineMode.archive,
-                    onChanged: (d) => setState(() => _detail = d),
-                    onEditingDone: _focus.requestFocus,
-                  ),
+                  child: _editFaces && a != null
+                      ? EditFacesPanel(
+                          key: ValueKey('faces${a.id}'),
+                          api: api,
+                          assetId: a.id,
+                          onClose: () => setState(() {
+                            _editFaces = false;
+                            _highlight = const [];
+                            _focus.requestFocus();
+                          }),
+                          onChanged: _reloadDetail,
+                          onHover: (f) => setState(() => _highlight = f == null ? const [] : [f.rel]),
+                        )
+                      : InfoPanel(
+                          api: api,
+                          detail: _detail,
+                          albums: _albums,
+                          canEdit: widget.mode == TimelineMode.normal || widget.mode == TimelineMode.archive,
+                          onChanged: (d) => setState(() => _detail = d),
+                          onEditingDone: _focus.requestFocus,
+                          onHighlightPerson: _highlightPerson,
+                          onEditFaces: a != null && a.isImage ? () => setState(() => _editFaces = true) : null,
+                          onTagFace: a != null && a.isImage && !_isPanorama(a) ? _startTagging : null,
+                        ),
                 ),
             ],
           ),
@@ -277,20 +380,76 @@ class _ViewerScreenState extends State<ViewerScreen> {
   }
 
   Widget _buildImage(AssetRef a) {
+    // Exactly the photo's shape, so face boxes (fractions) line up at any zoom.
+    final framed = Center(
+      child: AspectRatio(
+        aspectRatio: a.ratio > 0 ? a.ratio : 1,
+        child: Stack(fit: StackFit.expand, children: [
+          _photo(a),
+          if (_highlight.isNotEmpty && _tagBox == null)
+            IgnorePointer(
+              child: CustomPaint(painter: FaceBoxesPainter(_highlight, Theme.of(context).colorScheme.primary)),
+            ),
+          if (_tagBox != null)
+            FaceTagBox(
+              key: ValueKey('tag${a.id}'),
+              initial: _tagBox!,
+              onChanged: (r) => _tagBox = r,
+            ),
+        ]),
+      ),
+    );
+    // While a face box is drawn the zoom is reset and off, so drags reach the box
+    // (InteractiveViewer's recognizers compete for them even when disabled).
+    if (_tagBox != null) return framed;
     return GestureDetector(
       onDoubleTap: () => setState(() {
         _transform.value = _transform.value.getMaxScaleOnAxis() > 1
             ? Matrix4.identity()
             : (Matrix4.identity()..scaleByDouble(2.5, 2.5, 2.5, 1));
       }),
-      child: InteractiveViewer(
-        transformationController: _transform,
-        maxScale: 8,
-        child: Center(
-          child: Image(
+      child: InteractiveViewer(transformationController: _transform, maxScale: 8, child: framed),
+    );
+  }
+
+  /// Shown while drawing a face box (web: FaceEditor's bar).
+  Widget _taggingBar() {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 72),
+        child: Material(
+          color: Colors.black87,
+          borderRadius: BorderRadius.circular(28),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.face_retouching_natural, color: Colors.white),
+              const SizedBox(width: 10),
+              Text(t('tag_face'), style: const TextStyle(color: Colors.white)),
+              const SizedBox(width: 20),
+              TextButton(
+                onPressed: () => setState(() => _tagBox = null),
+                child: Text(t('cancel')),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: _finishTagging,
+                icon: const Icon(Icons.person_search),
+                label: Text(t('select_person')),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _photo(AssetRef a) {
+    return Image(
             // Low-res thumbnail shows instantly, then the preview replaces it.
             image: NetworkImage(api.thumbnailUrl(a.id, size: 'preview'), headers: api.headers),
-            fit: BoxFit.contain,
+            fit: BoxFit.fill,
             gaplessPlayback: true,
             frameBuilder: (context, child, frame, sync) => frame == null && !sync
                 ? Image(
@@ -302,9 +461,6 @@ class _ViewerScreenState extends State<ViewerScreen> {
                 : child,
             errorBuilder: (_, _, _) =>
                 const Icon(Icons.broken_image_outlined, color: Colors.white54, size: 64),
-          ),
-        ),
-      ),
     );
   }
 
