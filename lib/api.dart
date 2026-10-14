@@ -697,13 +697,20 @@ class ImmichApi {
 
   // ---- People management ----
 
+  /// [userId] (v3.3): only change that user's record of a shared person ("Only change for me").
   Future<Person> updatePerson(String id,
-          {String? name, bool? isHidden, bool? isFavorite, String? birthDate, bool clearBirthDate = false}) async =>
+          {String? name,
+          bool? isHidden,
+          bool? isFavorite,
+          String? birthDate,
+          bool clearBirthDate = false,
+          String? userId}) async =>
       Person.fromJson(await _sendJson('PUT', '/people/$id', {
         'name': ?name,
         'isHidden': ?isHidden,
         'isFavorite': ?isFavorite,
         if (birthDate != null || clearBirthDate) 'birthDate': birthDate,
+        'userId': ?userId,
       }));
   /// Merges [otherIds] into person [id].
   // ---- Faces (web: PersonSidePanel / FaceEditor) ----

@@ -147,6 +147,28 @@ void main() {
     await shot('person_access_after');
     await tap(find.text('Done'));
 
+    // 5. Edit Emma: "Only change for me" starts checked (Features → Apply changes to: Only me).
+    await tap(find.byTooltip('Edit person'));
+    await waitFor(find.text('Only change for me'));
+    await until(() => tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value == true,
+        'only for me from the preference');
+    await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Emma B');
+    await shot('person_edit');
+    await tap(find.text('Save'));
+    await until(() => server.personUpdates.isNotEmpty, 'person updated');
+    expect(server.personUpdates.last['name'], 'Emma B');
+    expect(server.personUpdates.last['userId'], me);
+    await waitFor(find.text('Emma B'));
+    // Unchecked: the change goes to everyone with access (no userId).
+    await tap(find.byTooltip('Edit person'));
+    await waitFor(find.text('Only change for me'));
+    await until(() => tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value == true, 'checked');
+    await tap(find.text('Only change for me'));
+    await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Emma C');
+    await tap(find.text('Save'));
+    await until(() => server.personUpdates.length == 2, 'second update');
+    expect(server.personUpdates.last.containsKey('userId'), isFalse);
+
     expect(errors, isEmpty);
     FlutterError.onError = previous;
     await server.stop();

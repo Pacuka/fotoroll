@@ -61,6 +61,8 @@ class FakeImmich {
   final clusterRequests = <Map<String, dynamic>>[];
   /// Shared people (v3.3): {personId, sharedById, sharedWithId, role}.
   final personAccess = <Map<String, dynamic>>[];
+  /// Bodies of PUT /api/people/{id}, in order.
+  final personUpdates = <Map<String, dynamic>>[];
   /// Person id -> the same person in other users' libraries (otherPeople).
   final otherPeopleOf = <String, List<Map<String, dynamic>>>{};
 
@@ -440,7 +442,9 @@ class FakeImmich {
       out = personJson(people.firstWhere((x) => x['id'] == match(r'/api/people/([\w-]+)')![1]));
     } else if (match(r'/api/people/([\w-]+)') != null && m == 'PUT') {
       final pe = people.firstWhere((x) => x['id'] == match(r'/api/people/([\w-]+)')![1]);
-      (body as Map).forEach((k, v) => pe[k] = v);
+      personUpdates.add({...body as Map<String, dynamic>});
+      // userId only picks whose record changes; the fake keeps one record.
+      body.forEach((k, v) => k == 'userId' ? null : pe[k] = v);
       out = personJson(pe);
     } else if (path == '/api/view/folder/unique-paths') {
       out = ['/photos/2026/october', '/photos/2025'];
@@ -457,7 +461,7 @@ class FakeImmich {
       // Every optional sidebar entry on, so the test visits them all.
       out = {
         'folders': {'enabled': true, 'sidebarWeb': true}, 'memories': {'enabled': true},
-        'people': {'enabled': true, 'sidebarWeb': true}, 'ratings': {'enabled': true},
+        'people': {'enabled': true, 'sidebarWeb': true, 'updateStrategy': 'self'}, 'ratings': {'enabled': true},
         'tags': {'enabled': true, 'sidebarWeb': true}, 'sharedLinks': {'enabled': true, 'sidebarWeb': true},
         'recentlyAdded': {'sidebarWeb': true},
       };

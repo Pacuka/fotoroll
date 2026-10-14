@@ -1,5 +1,6 @@
 // Explore page modeled on the web client's /explore, /people and /places routes.
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../api.dart';
 import '../i18n.dart';
@@ -584,39 +585,18 @@ class _PersonScreenState extends State<PersonScreen> {
     }
   }
 
-  Future<void> _rename() async {
-    final ctl = TextEditingController(text: _person.name);
-    final name = await showDialog<String>(
+  /// Web: PersonEditModal (name, date of birth, "only change for me" for shared people).
+  Future<void> _edit() async {
+    final r = await showDialog<_PersonEdit>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(t('edit_name')),
-        content: TextField(
-          controller: ctl,
-          autofocus: true,
-          decoration: InputDecoration(hintText: t('add_a_name')),
-          onSubmitted: (v) => Navigator.pop(ctx, v),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('cancel'))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, ctl.text), child: Text(t('save'))),
-        ],
-      ),
+      builder: (_) => _PersonEditDialog(api: api, person: _person),
     );
-    if (name != null) await _update(() => api.updatePerson(_person.id, name: name.trim()));
-  }
-
-  Future<void> _birthDate() async {
-    final d = await showDatePicker(
-      context: context,
-      initialDate: _person.birthDate ?? DateTime(2000),
-      firstDate: DateTime(1850),
-      lastDate: DateTime.now(),
-      helpText: t('edit_birthday'),
-    );
-    if (d == null) return;
-    final iso = '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-'
-        '${d.day.toString().padLeft(2, '0')}';
-    await _update(() => api.updatePerson(_person.id, birthDate: iso), t('date_of_birth_saved'));
+    if (r == null) return;
+    await _update(() async {
+      await api.updatePerson(_person.id,
+          name: r.name, birthDate: r.birthDate, clearBirthDate: r.birthDate == null, userId: r.userId);
+      return api.person(_person.id);
+    }, t('saved'));
   }
 
   Future<void> _merge() async {
@@ -654,8 +634,7 @@ class _PersonScreenState extends State<PersonScreen> {
       ].join(' · ').nullIfEmpty,
       query: TimelineQuery(personId: p.id),
       actions: [
-        IconButton(tooltip: t('edit_name'), icon: const Icon(Icons.edit_outlined), onPressed: _rename),
-        IconButton(tooltip: t('edit_birthday'), icon: const Icon(Icons.cake_outlined), onPressed: _birthDate),
+        IconButton(tooltip: t('edit_person'), icon: const Icon(Icons.edit_outlined), onPressed: _edit),
         IconButton(
           tooltip: p.isFavorite ? t('remove_from_favorites') : t('to_favorite'),
           icon: Icon(p.isFavorite ? Icons.favorite : Icons.favorite_border),
@@ -678,6 +657,128 @@ class _PersonScreenState extends State<PersonScreen> {
               : const SizedBox.shrink(),
         ),
         const SizedBox(width: 8),
+      ],
+    );
+  }
+}
+
+class _PersonEdit {
+  final String name;
+  final String? birthDate; // yyyy-MM-dd or null to clear
+  final String? userId;
+  _PersonEdit(this.name, this.birthDate, this.userId);
+}
+
+class _PersonEditDialog extends StatefulWidget {
+  final ImmichApi api;
+  final Person person;
+  const _PersonEditDialog({required this.api, required this.person});
+
+  @override
+  State<_PersonEditDialog> createState() => _PersonEditDialogState();
+}
+
+class _PersonEditDialogState extends State<_PersonEditDialog> {
+  late final _name = TextEditingController(text: widget.person.name);
+  late DateTime? _birth = widget.person.birthDate;
+  bool _onlyForMe = false;
+  String? _myId;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.person.otherPeople.isEmpty) return;
+    // Default from Features → People → "Apply changes to" (web: updateStrategy, default everyone).
+    Future.wait([widget.api.me(), widget.api.preferences()]).then((r) {
+      if (!mounted) return;
+      setState(() {
+        _myId = r[0]['id'];
+        _onlyForMe = (r[1]['people'] as Map?)?['updateStrategy'] == 'self';
+      });
+    }, onError: (_) {});
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  String _iso(DateTime d) => '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
+  Future<void> _pickDate() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _birth ?? DateTime(2000),
+      firstDate: DateTime(1850),
+      lastDate: DateTime.now(),
+      helpText: t('date_of_birth'),
+    );
+    if (d != null) setState(() => _birth = d);
+  }
+
+  void _submit() => Navigator.pop(
+      context,
+      _PersonEdit(_name.text.trim(), _birth == null ? null : _iso(_birth!),
+          _onlyForMe && _myId != null ? _myId : null));
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final shared = widget.person.otherPeople.isNotEmpty;
+    return AlertDialog(
+      title: Row(children: [const Icon(Icons.edit_outlined), const SizedBox(width: 12), Text(t('edit_person'))]),
+      content: SizedBox(
+        width: 400,
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          TextField(
+            controller: _name,
+            autofocus: true,
+            decoration: InputDecoration(labelText: t('name'), border: const OutlineInputBorder()),
+            onSubmitted: (_) => _submit(),
+          ),
+          const SizedBox(height: 16),
+          InputDecorator(
+            decoration: InputDecoration(
+              labelText: t('date_of_birth'),
+              helperText: t('birthdate_set_description'),
+              helperMaxLines: 3,
+              border: const OutlineInputBorder(),
+            ),
+            child: Row(children: [
+              Expanded(
+                child: Text(_birth == null ? '—' : DateFormat.yMMMMd(i18n.dateLocale).format(_birth!)),
+              ),
+              if (_birth != null)
+                IconButton(
+                  tooltip: t('clear'),
+                  icon: const Icon(Icons.clear),
+                  onPressed: () => setState(() => _birth = null),
+                ),
+              IconButton(
+                tooltip: t('edit_birthday'),
+                icon: const Icon(Icons.calendar_month_outlined),
+                onPressed: _pickDate,
+              ),
+            ]),
+          ),
+          if (shared) ...[
+            const SizedBox(height: 12),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(t('person_edit_only_change_for_me')),
+              subtitle: Text(t('person_edit_only_change_for_me_description'), style: theme.textTheme.bodySmall),
+              value: _onlyForMe,
+              onChanged: _myId == null ? null : (v) => setState(() => _onlyForMe = v!),
+            ),
+          ],
+        ]),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(t('cancel'))),
+        FilledButton(onPressed: _submit, child: Text(t('save'))),
       ],
     );
   }

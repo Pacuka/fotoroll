@@ -126,10 +126,11 @@ void main() {
     await wait(const Duration(seconds: 1));
     await waitFor(find.byType(PersonAvatar));
     await tester.tap(find.byType(PersonAvatar).first);
-    await waitFor(find.byTooltip('Edit name'));
-    await tester.tap(find.byTooltip('Edit name'));
+    await waitFor(find.byTooltip('Edit person'));
+    await tester.tap(find.byTooltip('Edit person'));
     await wait(const Duration(milliseconds: 500));
-    await tester.enterText(find.byType(TextField).last, 'Anna');
+    expect(find.text('Only change for me'), findsNothing, reason: 'not a shared person');
+    await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Anna');
     await tester.tap(find.text('Save'));
     await until(() => server.people.first['name'] == 'Anna', 'person renamed');
     noErrors('person rename');

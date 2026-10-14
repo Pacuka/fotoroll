@@ -62,7 +62,7 @@ class AccountSettingsScreen extends StatelessWidget {
 
 // ---- Preferences (web: DownloadSettings / FeatureSettings / NotificationsSettings) ----
 
-enum _Kind { toggle, number, gib, order }
+enum _Kind { toggle, number, gib, order, choice }
 
 class _Pref {
   final String path; // e.g. 'folders.enabled'
@@ -70,7 +70,9 @@ class _Pref {
   final String? desc;
   final _Kind kind;
   final String? requires; // only shown when this path is true (web: {#if enabled})
-  const _Pref(this.path, this.label, this.kind, {this.desc, this.requires});
+  /// [_Kind.choice]: (value, label key). Hidden when the server doesn't have the preference.
+  final List<(String, String)> options;
+  const _Pref(this.path, this.label, this.kind, {this.desc, this.requires, this.options = const []});
 }
 
 class _PrefGroup {
@@ -108,6 +110,11 @@ const _featurePrefs = [
         desc: 'sidebar_display_description', requires: 'people.enabled'),
     _Pref('people.minimumFaces', 'minFaces', _Kind.number,
         desc: 'minFaces_description', requires: 'people.enabled'),
+    _Pref('people.updateStrategy', 'person_update_strategy', _Kind.choice,
+        desc: 'person_update_strategy_description', requires: 'people.enabled', options: [
+          ('everyone', 'person_update_strategy_everyone'),
+          ('self', 'person_update_strategy_self'),
+        ]),
   ]),
   _PrefGroup('rating', 'rating_description', [
     _Pref('ratings.enabled', 'enable', _Kind.toggle),
@@ -181,7 +188,9 @@ class _PrefsSectionState extends State<_PrefsSection> {
     for (final g in widget.groups) {
       for (final p in g.prefs) {
         final parts = p.path.split('.');
-        (update[parts[0]] ??= <String, dynamic>{})[parts[1]] = _get(p.path);
+        final v = _get(p.path);
+        if (v == null && p.kind == _Kind.choice) continue; // not on this server version
+        (update[parts[0]] ??= <String, dynamic>{})[parts[1]] = v;
       }
     }
     await _guard(context, () async {
@@ -217,6 +226,17 @@ class _PrefsSectionState extends State<_PrefsSection> {
               DropdownMenuItem(value: 'asc', child: Text(t('oldest_first'))),
               DropdownMenuItem(value: 'desc', child: Text(t('newest_first'))),
             ],
+            onChanged: (x) => _set(p.path, x),
+          ),
+        );
+      case _Kind.choice:
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(t(p.label)),
+          subtitle: desc,
+          trailing: DropdownButton<String>(
+            value: v as String?,
+            items: [for (final (value, label) in p.options) DropdownMenuItem(value: value, child: Text(t(label)))],
             onChanged: (x) => _set(p.path, x),
           ),
         );
@@ -260,7 +280,8 @@ class _PrefsSectionState extends State<_PrefsSection> {
             ]),
           ),
         for (final p in g.prefs)
-          if (p.requires == null || _get(p.requires!) == true) _pref(p),
+          if ((p.requires == null || _get(p.requires!) == true) && (p.kind != _Kind.choice || _get(p.path) != null))
+            _pref(p),
       ],
       const SizedBox(height: 8),
       Align(

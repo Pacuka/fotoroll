@@ -132,6 +132,13 @@ void main() {
     await gone(find.text('Leave'));
     await shot('sharing_left');
 
+    // 5. Features → People → "Apply changes to" (v3.3 person update strategy).
+    await tap(find.text('Features'));
+    await waitFor(find.text('Apply changes to'));
+    expect(find.text('Only me'), findsOneWidget);
+    await tester.ensureVisible(find.text('Apply changes to'));
+    await shot('features_update_strategy');
+
     expect(errors, isEmpty);
     FlutterError.onError = previous;
     await server.stop();
