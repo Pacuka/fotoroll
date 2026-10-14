@@ -55,7 +55,7 @@ See [docs/PARITY.md](docs/PARITY.md) for the full feature checklist against the 
 
 ## Requirements
 
-- An Immich server, tested against **v3.1.0**
+- An Immich server, tested against **v3.3.3** (v3.1 and later work)
 - Runtime libraries: `gtk3`, `mpv` (libmpv), `libsecret`; optional `libayatana-appindicator` for the tray
 - To build: [Flutter](https://docs.flutter.dev/get-started/install/linux) (stable), `clang`, `cmake`,
   `ninja`, `pkg-config`
@@ -109,7 +109,7 @@ Where things live:
 
 ```bash
 flutter analyze
-flutter test                     # unit + widget tests (fake v3.1.0 responses)
+flutter test                     # unit + widget tests (fake v3.3 responses)
 tool/run_integration_tests.sh    # the real desktop app against an in-memory fake Immich server
 ```
 

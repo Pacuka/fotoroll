@@ -530,7 +530,7 @@ class _PersonScreenState extends State<PersonScreen> {
       initialDate: _person.birthDate ?? DateTime(2000),
       firstDate: DateTime(1850),
       lastDate: DateTime.now(),
-      helpText: t('set_date_of_birth'),
+      helpText: t('edit_birthday'),
     );
     if (d == null) return;
     final iso = '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-'
@@ -571,7 +571,7 @@ class _PersonScreenState extends State<PersonScreen> {
       query: TimelineQuery(personId: p.id),
       actions: [
         IconButton(tooltip: t('edit_name'), icon: const Icon(Icons.edit_outlined), onPressed: _rename),
-        IconButton(tooltip: t('set_date_of_birth'), icon: const Icon(Icons.cake_outlined), onPressed: _birthDate),
+        IconButton(tooltip: t('edit_birthday'), icon: const Icon(Icons.cake_outlined), onPressed: _birthDate),
         IconButton(
           tooltip: p.isFavorite ? t('remove_from_favorites') : t('to_favorite'),
           icon: Icon(p.isFavorite ? Icons.favorite : Icons.favorite_border),

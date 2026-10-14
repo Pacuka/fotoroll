@@ -107,6 +107,9 @@ void main() {
       noErrors(page);
     }
     await waitFor(tiles);
+    // The trash page reads the retention from v3.3's /config, not the deprecated /server/config.
+    expect(server.requests.where((r) => r.endsWith('/api/config')), isNotEmpty);
+    expect(server.requests.where((r) => r.endsWith('/server/config')), isEmpty);
 
     // 1b. Folders: open a folder from the tree.
     await tester.tap(find.text('Folders').first);

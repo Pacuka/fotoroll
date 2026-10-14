@@ -1,5 +1,5 @@
 // Exercises the API client against a fake server that returns
-// Immich v3.1.0-shaped responses.
+// Immich v3.3-shaped responses.
 import 'dart:convert';
 import 'dart:io';
 

@@ -1,4 +1,4 @@
-// In-memory Immich v3.1.0 stand-in for integration tests: serves a small
+// In-memory Immich v3.3.3 stand-in for integration tests: serves a small
 // library (photos + videos), records edits, and supports the endpoints the app uses.
 import 'dart:convert';
 import 'dart:io';
@@ -168,9 +168,9 @@ class FakeImmich {
     } else if (path == '/api/server/storage') {
       out = {'diskUse': '1 GiB', 'diskSize': '10 GiB', 'diskUsagePercentage': 10};
     } else if (path == '/api/server/version') {
-      out = {'major': 3, 'minor': 1, 'patch': 0};
-    } else if (path == '/api/server/config') {
-      out = {'trashDays': 30};
+      out = {'major': 3, 'minor': 3, 'patch': 3};
+    } else if (path == '/api/config') {
+      out = {'trash': {'enabled': true, 'days': 30}};
     } else if (path == '/api/server/media-types') {
       out = {'image': ['.jpg'], 'video': ['.mp4'], 'sidecar': []};
     } else if (path == '/api/timeline/buckets') {

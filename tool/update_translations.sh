@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Downloads the shared Immich translations (the same i18n/*.json files the web
 # and mobile clients use) for a given server version into assets/i18n/.
-#   tool/update_translations.sh v3.1.0
+#   tool/update_translations.sh v3.3.3
 set -euo pipefail
 cd "$(dirname "$0")/.."
-TAG="${1:-v3.1.0}"
+TAG="${1:-v3.3.3}"
 DEST=assets/i18n
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT

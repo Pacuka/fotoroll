@@ -1,5 +1,5 @@
 // Builds every settings/admin/utility screen against a fake server with realistic
-// v3.1.0 responses and fails on any exception (release builds would show a grey box).
+// v3.3 responses and fails on any exception (release builds would show a grey box).
 import 'dart:convert';
 import 'dart:io';
 
@@ -72,8 +72,8 @@ final _routes = <String, Object?>{
     {'duplicateId': _id, 'assets': [_asset, {..._asset, 'id': '2$_id'}], 'suggestedKeepAssetIds': [_id]},
   ],
   '/api/search/large-assets': [_asset],
-  '/api/system-config': jsonDecode(File('test/fixtures/system_config.json').readAsStringSync()),
-  '/api/system-config/defaults': jsonDecode(File('test/fixtures/system_config.json').readAsStringSync()),
+  '/api/admin/config': jsonDecode(File('test/fixtures/system_config.json').readAsStringSync()),
+  '/api/admin/config/defaults': jsonDecode(File('test/fixtures/system_config.json').readAsStringSync()),
 };
 
 Future<void> _settle(WidgetTester tester) async {

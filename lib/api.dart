@@ -1,4 +1,4 @@
-// Minimal Immich API client (targets server v3.1.0).
+// Minimal Immich API client (targets server v3.3; falls back to older endpoints for v3.1+).
 // Only the endpoints the app uses; see open-api/immich-openapi-specs.json upstream.
 import 'dart:async';
 import 'dart:convert';
@@ -481,6 +481,16 @@ class ImmichApi {
     return jsonDecode(res.body);
   }
 
+  /// Calls [current]; if the server doesn't know that endpoint (404, older server) calls [older].
+  Future<T> _orOlder<T>(Future<T> Function() current, Future<T> Function() older) async {
+    try {
+      return await current();
+    } on ApiException catch (e) {
+      if (e.status != 404) rethrow;
+      return older();
+    }
+  }
+
   Future<dynamic> _postJson(String path, Map<String, dynamic> body) async {
     final res = await _send(() => _client.post(
           _uri(path),
@@ -715,8 +725,11 @@ class ImmichApi {
   Future<Person> createPerson({String? name}) async =>
       Person.fromJson(await _sendJson('POST', '/people', {if (name != null && name.isNotEmpty) 'name': name}));
 
-  Future<void> mergePeople(String id, List<String> otherIds) =>
-      _sendJson('POST', '/people/$id/merge', {'ids': otherIds});
+  /// Merges [otherIds] into [id] (POST /people/merge with [id] first; servers before v3.3 only
+  /// have POST /people/{id}/merge).
+  Future<void> mergePeople(String id, List<String> otherIds) => _orOlder(
+      () => _sendJson('POST', '/people/merge', {'ids': [id, ...otherIds]}),
+      () => _sendJson('POST', '/people/$id/merge', {'ids': otherIds}));
 
   // ---- Activity (comments & likes in shared albums) ----
 
@@ -845,11 +858,13 @@ class ImmichApi {
 
   // ---- Server & user settings ----
 
-  Future<Map<String, dynamic>> systemConfig() async => await _getJson('/system-config');
-  Future<Map<String, dynamic>> systemConfigDefaults() async =>
-      await _getJson('/system-config/defaults');
-  Future<Map<String, dynamic>> updateSystemConfig(Map<String, dynamic> config) async =>
-      await _sendJson('PUT', '/system-config', config);
+  // /admin/config since v3.3, /system-config before (same body).
+  Future<Map<String, dynamic>> systemConfig() async =>
+      await _orOlder<dynamic>(() => _getJson('/admin/config'), () => _getJson('/system-config'));
+  Future<Map<String, dynamic>> systemConfigDefaults() async => await _orOlder<dynamic>(
+      () => _getJson('/admin/config/defaults'), () => _getJson('/system-config/defaults'));
+  Future<Map<String, dynamic>> updateSystemConfig(Map<String, dynamic> config) async => await _orOlder<dynamic>(
+      () => _sendJson('PUT', '/admin/config', config), () => _sendJson('PUT', '/system-config', config));
 
   Future<Map<String, dynamic>> preferences() async => await _getJson('/users/me/preferences');
   Future<Map<String, dynamic>> updatePreferences(Map<String, dynamic> update) async =>
@@ -1077,7 +1092,9 @@ class ImmichApi {
     return 'v${j['major']}.${j['minor']}.${j['patch']}';
   }
 
-  Future<int> trashDays() async => ((await _getJson('/server/config'))['trashDays'] as num).toInt();
+  Future<int> trashDays() async => await _orOlder(
+      () async => ((await _getJson('/config'))['trash']['days'] as num).toInt(),
+      () async => ((await _getJson('/server/config'))['trashDays'] as num).toInt());
 
   /// direction: 'shared-with' = partners sharing with me, 'shared-by' = I share with them.
   Future<List<Partner>> partners(String direction) async {
