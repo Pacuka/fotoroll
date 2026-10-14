@@ -15,6 +15,10 @@ flutter build linux --release
 rm -rf "$OUT"
 mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/applications" "$APPDIR/usr/share/icons/hicolor/512x512/apps"
 cp -r build/linux/x64/release/bundle/. "$APPDIR/usr/bin/"
+# path_provider_android pulls in package:jni, whose native hook builds a JNI helper
+# whenever a JDK is around (GitHub runners have one); linuxdeploy would then bundle
+# libjvm.so too. Nothing on Linux uses it: drop it so every build ships the same.
+rm -f "$APPDIR/usr/bin/lib/libdartjni.so"
 cp tool/appimage/io.github.pacuka.Fotoroll.desktop "$APPDIR/usr/share/applications/"
 cp assets/branding/fotoroll.png "$APPDIR/usr/share/icons/hicolor/512x512/apps/io.github.pacuka.Fotoroll.png"
 desktop-file-validate "$APPDIR/usr/share/applications/io.github.pacuka.Fotoroll.desktop"
@@ -36,6 +40,10 @@ done
 # untouched Flutter bundle back - it finds its own lib/ via $ORIGIN - and drop
 # the duplicates; usr/lib keeps only the third-party dependencies.
 cp -r build/linux/x64/release/bundle/. "$APPDIR/usr/bin/"
+# path_provider_android pulls in package:jni, whose native hook builds a JNI helper
+# whenever a JDK is around (GitHub runners have one); linuxdeploy would then bundle
+# libjvm.so too. Nothing on Linux uses it: drop it so every build ships the same.
+rm -f "$APPDIR/usr/bin/lib/libdartjni.so"
 for lib in "$APPDIR"/usr/bin/lib/*.so; do rm -f "$APPDIR/usr/lib/$(basename "$lib")"; done
 # Image loaders for the bundled GTK (window-button icons are SVGs). The bundled
 # gdk-pixbuf would look for them at Ubuntu's path, which other distros don't

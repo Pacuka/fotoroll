@@ -17,10 +17,15 @@ RUN curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/st
 ENV PATH=/opt/flutter/bin:$PATH
 RUN flutter config --no-analytics --no-cli-animations && flutter precache --linux
 
-# AppImage tooling; extract-and-run because containers have no FUSE.
+# AppImage tooling, pinned with checksums (same as .github/workflows/appimage.yml);
+# extract-and-run because containers have no FUSE.
 RUN curl -fsSL -o /usr/local/bin/linuxdeploy \
-      https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage \
+      https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20251107-1/linuxdeploy-x86_64.AppImage \
     && curl -fsSL -o /usr/local/bin/appimagetool \
-      https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage \
+      https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage \
+    && printf '%s  %s\n' \
+      c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d /usr/local/bin/linuxdeploy \
+      ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0 /usr/local/bin/appimagetool \
+      | sha256sum -c - \
     && chmod +x /usr/local/bin/linuxdeploy /usr/local/bin/appimagetool
 ENV APPIMAGE_EXTRACT_AND_RUN=1
