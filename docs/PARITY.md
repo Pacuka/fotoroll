@@ -1,7 +1,24 @@
-# Feature parity with the official Immich clients (v3.1.0)
+# Feature parity with the official Immich clients (v3.3.3)
 
-Source of truth: `immich-app/immich@v3.1.0` (web routes in `web/src/routes`, mobile pages in
+Source of truth: `immich-app/immich@v3.1.0`, plus the v3.3.3 delta below (web routes in `web/src/routes`, mobile pages in
 `mobile/lib/**/pages`). ✅ done · 🟡 partial · ⬜ todo · ➖ not applicable on desktop
+
+## New in Immich v3.2 – v3.3.3 (catch-up list)
+Endpoint moves are done (`/config`, `/admin/config`, `POST /people/merge`, with v3.1 fallback) and the
+translations come from v3.3.3. User-facing features still to do, in planned order:
+
+| Feature | Web source | Status |
+|---|---|---|
+| Sharing settings: cluster group (invite users, pending requests, accept/decline, leave, reset facial recognition) | `user-settings/SharingSettings.svelte` | ⬜ |
+| Shared people: manage access per person and in bulk, "shared with me" indicator, filter people by shared by / with | `PersonEditAccessModal`, `PersonBulkShareModal`, `PeopleFilterModal`, `PersonIndicator` | ⬜ |
+| Person edit: name + birth date in one dialog, "only change for me" for shared people; Features → people update strategy | `PersonEditModal`, `FeatureSettings.svelte` | ⬜ |
+| Memories page (current / upcoming, favorite memories, filters) and birthday memories | `/memories`, `MemoryCard`, `MemoriesSettingsModal` | ⬜ |
+| Album editors can change title & description | `album.service.ts` | ⬜ |
+| API key rotate | `api-key.service.ts` | ⬜ |
+| Tag renaming | `TagEditModal` | ⬜ |
+| Map: show assets in the current viewport | `map/` | ⬜ |
+| Slideshow: metadata overlay mode (full / description only) | `SlideshowSettingsModal` | ⬜ |
+| Revamped search dialog (same filters, new layout) | `search-bar/` | ⬜ (ours already has every filter) |
 
 ## Main navigation (web sidebar)
 | Feature | Web route | Status |
