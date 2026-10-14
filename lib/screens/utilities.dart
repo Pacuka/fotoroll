@@ -108,7 +108,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       appBar: AppBar(title: Text(t('review_duplicates'))),
       body: Loader<List<DuplicateGroup>>(
         future: _groups,
-        onRetry: () => setState(() => _groups = widget.api.duplicates()),
+        onRetry: () => setState(() { _groups = widget.api.duplicates(); }),
         builder: (groups) {
           if (groups.isEmpty) return Center(child: Text(t('no_duplicates_found')));
           if (_keep.isEmpty) _select(groups, _index);

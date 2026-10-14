@@ -77,7 +77,7 @@ class _UsersTabState extends State<_UsersTab> {
   late final Future<String?> _meId =
       widget.api.me().then((m) => m['id'] as String?).catchError((_) => null);
 
-  void _reload() => setState(() => _users = widget.api.adminUsers());
+  void _reload() => setState(() { _users = widget.api.adminUsers(); });
 
   Future<void> _run(Future<void> Function() f, [String? ok]) async {
     try {

@@ -389,7 +389,7 @@ class _TimelinePageState extends State<_TimelinePage> {
   Widget build(BuildContext context) {
     return Loader<TimelineSource>(
       future: _source,
-      onRetry: () => setState(() => _source = TimelineSource.create(widget.api, widget.query)),
+      onRetry: () => setState(() { _source = TimelineSource.create(widget.api, widget.query); }),
       builder: (src) => TimelineView(
         api: widget.api,
         source: src,

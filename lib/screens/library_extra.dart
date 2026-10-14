@@ -88,7 +88,7 @@ class _TagsScreenState extends State<TagsScreen> {
   Map<String, dynamic>? _selected;
   Future<TimelineSource>? _source;
 
-  void _reload() => setState(() => _tags = widget.api.tags());
+  void _reload() => setState(() { _tags = widget.api.tags(); });
 
   void _select(List<Map<String, dynamic>> tags, String value) {
     final tag = tags.firstWhere((t) => t['value'] == value, orElse: () => {});
@@ -237,7 +237,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
   Widget build(BuildContext context) {
     return Loader<List<String>>(
       future: _paths,
-      onRetry: () => setState(() => _paths = widget.api.folderPaths()),
+      onRetry: () => setState(() { _paths = widget.api.folderPaths(); }),
       builder: (paths) {
         final sub = _selected == null
             ? <String>[]
@@ -300,7 +300,7 @@ class SharedLinksScreen extends StatefulWidget {
 class _SharedLinksScreenState extends State<SharedLinksScreen> {
   late Future<List<Map<String, dynamic>>> _links = widget.api.sharedLinks();
 
-  void _reload() => setState(() => _links = widget.api.sharedLinks());
+  void _reload() => setState(() { _links = widget.api.sharedLinks(); });
 
   @override
   Widget build(BuildContext context) {

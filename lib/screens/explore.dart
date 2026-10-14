@@ -437,7 +437,7 @@ class _PlacesScreenState extends State<PlacesScreen> {
       ),
       body: Loader<List<Place>>(
         future: _places,
-        onRetry: () => setState(() => _places = api.places()),
+        onRetry: () => setState(() { _places = api.places(); }),
         builder: (all) {
           final places = _filter.isEmpty
               ? all

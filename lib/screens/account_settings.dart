@@ -564,7 +564,7 @@ class _PinSectionState extends State<_PinSection> {
                   _next.clear();
                   _confirm.clear();
                   // After first-time setup the form must switch to "change PIN".
-                  if (!hasPin && mounted) setState(() => _status = widget.api.authStatus());
+                  if (!hasPin && mounted) setState(() { _status = widget.api.authStatus(); });
                   if (context.mounted) {
                     _toast(context,
                         hasPin ? t('pin_code_changed_successfully') : t('pin_code_setup_successfully'));
@@ -591,7 +591,7 @@ class _ApiKeysSection extends StatefulWidget {
 class _ApiKeysSectionState extends State<_ApiKeysSection> {
   late Future<List<Map<String, dynamic>>> _keys = widget.api.apiKeys();
 
-  void _reload() => setState(() => _keys = widget.api.apiKeys());
+  void _reload() => setState(() { _keys = widget.api.apiKeys(); });
 
   Future<void> _create() async {
     final name = TextEditingController();
@@ -695,7 +695,7 @@ class _SessionsSection extends StatefulWidget {
 class _SessionsSectionState extends State<_SessionsSection> {
   late Future<List<Map<String, dynamic>>> _sessions = widget.api.sessions();
 
-  void _reload() => setState(() => _sessions = widget.api.sessions());
+  void _reload() => setState(() { _sessions = widget.api.sessions(); });
 
   @override
   Widget build(BuildContext context) {

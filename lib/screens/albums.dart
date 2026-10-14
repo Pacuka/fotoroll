@@ -542,7 +542,7 @@ class _AssetPickerScreenState extends State<AssetPickerScreen> {
       appBar: AppBar(title: Text(widget.title)),
       body: Loader<TimelineSource>(
         future: _source,
-        onRetry: () => setState(() => _source = TimelineSource.create(widget.api)),
+        onRetry: () => setState(() { _source = TimelineSource.create(widget.api); }),
         builder: (src) => TimelineView(
           api: widget.api,
           source: src,

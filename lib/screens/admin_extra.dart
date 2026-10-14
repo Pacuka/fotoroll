@@ -251,7 +251,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                       }
                       try {
                         await widget.api.deleteDatabaseBackups([b['filename']]);
-                        setState(() => _backups = widget.api.databaseBackups());
+                        setState(() { _backups = widget.api.databaseBackups(); });
                       } catch (e) {
                         if (context.mounted) _toast(context, '${t('error')}: $e');
                       }
