@@ -1,8 +1,9 @@
 // Round user picture like the web's UserAvatar: the profile image, or the
-// initial on the user's avatar colour when there is none.
+// initial on the user's avatar colour when there is none; and a user picker.
 import 'package:flutter/material.dart';
 
 import '../api.dart';
+import '../i18n.dart';
 
 const _avatarColors = {
   'primary': Color(0xFF4250AF),
@@ -44,3 +45,48 @@ class UserAvatar extends StatelessWidget {
     );
   }
 }
+
+/// Multi-select user picker (web: ClusterGroupUserSelectionModal / AddUsersModal).
+Future<List<Map<String, dynamic>>?> pickUsers(
+  BuildContext context,
+  ImmichApi api,
+  List<Map<String, dynamic>> users, {
+  String? title,
+  String? emptyMessage,
+}) =>
+    showDialog<List<Map<String, dynamic>>>(
+      context: context,
+      builder: (ctx) {
+        final picked = <String>{};
+        return StatefulBuilder(
+          builder: (ctx, setState) => AlertDialog(
+            title: Text(title ?? t('add_user')),
+            content: SizedBox(
+              width: 400,
+              child: users.isEmpty
+                  ? Text(emptyMessage ?? t('partner_page_no_more_users'))
+                  : ListView(shrinkWrap: true, children: [
+                      for (final u in users)
+                        CheckboxListTile(
+                          value: picked.contains(u['id']),
+                          onChanged: (v) =>
+                              setState(() => v! ? picked.add(u['id']) : picked.remove(u['id'])),
+                          secondary: UserAvatar(api: api, user: u),
+                          title: Text(u['name'] ?? ''),
+                          subtitle: Text(u['email'] ?? ''),
+                        ),
+                    ]),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('cancel'))),
+              FilledButton(
+                onPressed: picked.isEmpty
+                    ? null
+                    : () => Navigator.pop(ctx, [for (final u in users) if (picked.contains(u['id'])) u]),
+                child: Text(t('add')),
+              ),
+            ],
+          ),
+        );
+      },
+    );

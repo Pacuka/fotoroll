@@ -59,6 +59,29 @@ class FakeImmich {
   late final clusterGroupOf = {for (final u in [me, ...otherUsers]) u['id'] as String: 'g-${u['id']}'};
   /// Pending invitations: id, clusterGroupId, userId, createdAt.
   final clusterRequests = <Map<String, dynamic>>[];
+  /// Shared people (v3.3): {personId, sharedById, sharedWithId, role}.
+  final personAccess = <Map<String, dynamic>>[];
+  /// Person id -> the same person in other users' libraries (otherPeople).
+  final otherPeopleOf = <String, List<Map<String, dynamic>>>{};
+
+  /// PersonResponseDto with the v3.3 sharing fields.
+  Map<String, dynamic> personJson(Map<String, dynamic> p) {
+    final myId = me['id'];
+    Map<String, dynamic> userRole(String id, String role) => {..._user(id), 'role': role};
+    return {
+      ...p,
+      'sharedWith': [
+        for (final a in personAccess)
+          if (a['personId'] == p['id'] && a['sharedById'] == myId) userRole(a['sharedWithId'], a['role']),
+      ],
+      'sharedBy': [
+        for (final a in personAccess)
+          if (a['personId'] == p['id'] && a['sharedWithId'] == myId) userRole(a['sharedById'], a['role']),
+      ],
+      'otherPeople': otherPeopleOf[p['id']] ?? [],
+    };
+  }
+
   /// Cluster groups whose facial recognition was reset.
   final regeneratedGroups = <String>[];
   Map<String, dynamic> _user(String id) => [me, ...otherUsers].firstWhere((u) => u['id'] == id);
@@ -372,12 +395,53 @@ class FakeImmich {
       people.add(p);
       out = p;
       status = 201;
+    } else if (path == '/api/people/users' && m == 'GET') {
+      final myId = me['id'];
+      out = [
+        for (final a in personAccess)
+          if ((q['personId'] == null || a['personId'] == q['personId']) &&
+              (q['direction'] == 'shared-by' ? a['sharedById'] == myId : a['sharedWithId'] == myId))
+            {...a, 'sharedBy': _user(a['sharedById']), 'sharedWith': _user(a['sharedWithId'])},
+      ];
+    } else if (path == '/api/people/users' && m == 'PUT') {
+      final ids = body['type'] == 'everyone' ? [for (final p in people) p['id']] : body['personIds'] as List;
+      for (final personId in ids) {
+        for (final userId in body['sharedWithIds'] as List) {
+          personAccess.removeWhere((a) =>
+              a['personId'] == personId && a['sharedById'] == me['id'] && a['sharedWithId'] == userId);
+          personAccess.add(
+              {'personId': personId, 'sharedById': me['id'], 'sharedWithId': userId, 'role': body['role']});
+        }
+      }
+      status = 204;
+    } else if (path == '/api/people/users' && m == 'DELETE') {
+      for (final d in body as List) {
+        personAccess.removeWhere((a) =>
+            a['personId'] == d['personId'] && a['sharedWithId'] == d['sharedWithId'] &&
+            a['sharedById'] == (d['sharedById'] ?? me['id']));
+      }
+      status = 204;
     } else if (path == '/api/people') {
-      out = {'people': people, 'total': people.length, 'hidden': 0, 'hasNextPage': false};
+      // sharedById = people that user gave access to; sharedWithId = people that user was given.
+      bool shared(Map p) => personAccess.any((a) =>
+          a['personId'] == p['id'] &&
+          (q['sharedById'] == null || a['sharedById'] == q['sharedById']) &&
+          (q['sharedWithId'] == null || a['sharedWithId'] == q['sharedWithId']));
+      final list = [
+        for (final p in people)
+          if ((q['withHidden'] == 'true' || p['isHidden'] != true) &&
+              (q['isHidden'] == null || '${p['isHidden']}' == q['isHidden']) &&
+              (q['isFavorite'] == null || '${p['isFavorite']}' == q['isFavorite']) &&
+              (q['sharedById'] == null && q['sharedWithId'] == null || shared(p)))
+            personJson(p),
+      ];
+      out = {'people': list, 'total': list.length, 'hidden': 0, 'hasNextPage': false};
+    } else if (match(r'/api/people/([\w-]+)') != null && m == 'GET') {
+      out = personJson(people.firstWhere((x) => x['id'] == match(r'/api/people/([\w-]+)')![1]));
     } else if (match(r'/api/people/([\w-]+)') != null && m == 'PUT') {
       final pe = people.firstWhere((x) => x['id'] == match(r'/api/people/([\w-]+)')![1]);
       (body as Map).forEach((k, v) => pe[k] = v);
-      out = pe;
+      out = personJson(pe);
     } else if (path == '/api/view/folder/unique-paths') {
       out = ['/photos/2026/october', '/photos/2025'];
     } else if (path == '/api/view/folder') {

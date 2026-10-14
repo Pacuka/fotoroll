@@ -7,6 +7,7 @@ import '../sources.dart';
 import '../widgets/asset_actions.dart';
 import '../widgets/timeline_view.dart';
 import '../widgets/loader.dart';
+import '../widgets/person_access.dart';
 
 class _ExploreData {
   final List<Person> people;
@@ -153,12 +154,19 @@ class PersonAvatar extends StatelessWidget {
               ),
             ),
           ),
-          if (person.isFavorite)
-            const Positioned(
+          // Web: PersonIndicator (favorite, shared with me).
+          if (person.isFavorite || person.isShared)
+            Positioned(
               left: 4,
               top: 4,
-              child: Icon(Icons.favorite, color: Colors.white, size: 18,
-                  shadows: [Shadow(blurRadius: 4)]),
+              child: Row(children: [
+                if (person.isFavorite)
+                  Tooltip(message: t('favorite'), child: const Icon(Icons.favorite, color: Colors.white, size: 18,
+                      shadows: [Shadow(blurRadius: 4)])),
+                if (person.isShared)
+                  Tooltip(message: t('shared_with_me'), child: const Icon(Icons.group, color: Colors.white, size: 18,
+                      shadows: [Shadow(blurRadius: 4)])),
+              ]),
             ),
         ]),
         const SizedBox(height: 6),
@@ -230,19 +238,56 @@ class PeopleScreen extends StatefulWidget {
 }
 
 class _PeopleScreenState extends State<PeopleScreen> {
-  late Future<List<Person>> _people = widget.api.people();
+  late Future<List<Person>> _people = _fetch();
   String _filter = '';
   bool _manage = false; // web: "Show & hide people"
+  PeopleFilter _peopleFilter = const PeopleFilter();
+  /// Me and the other cluster group members (no group on servers before v3.2).
+  late final Future<(Map<String, dynamic>, List<Map<String, dynamic>>)> _group = () async {
+    final me = await widget.api.me();
+    return (me, me['clusterGroupId'] == null ? <Map<String, dynamic>>[] : await widget.api.clusterGroupOthers());
+  }();
 
-  void _setManage(bool v) => setState(() {
-        _manage = v;
-        _people = widget.api.people(withHidden: v);
+  /// Hidden people only show in "Show & hide" mode or when filtering for them (like the web).
+  Future<List<Person>> _fetch() {
+    final f = _peopleFilter;
+    return widget.api.people(
+      withHidden: _manage || f.isHidden != null,
+      sharedById: f.sharedById,
+      sharedWithId: f.sharedWithId,
+      isFavorite: f.isFavorite,
+      isHidden: f.isHidden,
+    );
+  }
+
+  void _refetch() => setState(() {
+        _people = _fetch();
       });
+
+  void _setManage(bool v) {
+    _manage = v;
+    _refetch();
+  }
+
+  Future<void> _editFilter() async {
+    final (me, others) = await _group;
+    if (!mounted) return;
+    final f = await showPeopleFilterDialog(context, _peopleFilter, me: me, others: others);
+    if (f == null) return;
+    _peopleFilter = f;
+    _refetch();
+  }
+
+  Future<void> _manageAccess() async {
+    final (_, others) = await _group;
+    if (!mounted || others.isEmpty) return;
+    if (await showBulkShareDialog(context, widget.api, others) == true) _refetch();
+  }
 
   Future<void> _toggleHidden(Person p) async {
     try {
       await widget.api.updatePerson(p.id, isHidden: !p.isHidden);
-      setState(() => _people = widget.api.people(withHidden: true));
+      _refetch();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${t('error')}: $e')));
     }
@@ -268,6 +313,22 @@ class _PeopleScreenState extends State<PeopleScreen> {
             ),
           ),
           const SizedBox(width: 8),
+          FutureBuilder(
+            future: _group,
+            builder: (context, snap) => (snap.data?.$2.isNotEmpty ?? false)
+                ? TextButton.icon(
+                    onPressed: _manageAccess,
+                    icon: const Icon(Icons.group_outlined),
+                    label: Text(t('manage_person_access')),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          IconButton(
+            tooltip: t('filters'),
+            onPressed: _editFilter,
+            icon: Badge(isLabelVisible: !_peopleFilter.isEmpty, smallSize: 8, child: const Icon(Icons.tune)),
+          ),
+          const SizedBox(width: 8),
           _manage
               ? FilledButton(onPressed: () => _setManage(false), child: Text(t('linux_show_people')))
               : TextButton.icon(
@@ -280,7 +341,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
       ),
       body: Loader<List<Person>>(
         future: _people,
-        onRetry: () => setState(() => _people = api.people(withHidden: _manage)),
+        onRetry: _refetch,
         builder: (all) {
           final people = _filter.isEmpty
               ? all
@@ -469,8 +530,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
       ),
       body: Loader<TimelineSource>(
         future: _source,
-        onRetry: () =>
-            setState(() => _source = TimelineSource.create(widget.api, widget.query)),
+        onRetry: () => setState(() {
+          _source = TimelineSource.create(widget.api, widget.query);
+        }),
         builder: (src) => src.length == 0
             ? Center(child: Text(t('linux_no_items')))
             : TimelineView(api: widget.api, source: src, mode: widget.mode),
@@ -492,6 +554,25 @@ class PersonScreen extends StatefulWidget {
 class _PersonScreenState extends State<PersonScreen> {
   late Person _person = widget.person;
   ImmichApi get api => widget.api;
+  /// Sharing people needs a cluster group with others (v3.3).
+  late final Future<bool> _canShare = api.clusterGroupOthers().then((o) => o.isNotEmpty, onError: (_) => false);
+
+  @override
+  void initState() {
+    super.initState();
+    // The people list may not carry the sharing fields; the person endpoint does.
+    api.person(_person.id).then((p) {
+      if (mounted) setState(() => _person = p);
+    }, onError: (_) {});
+  }
+
+  Future<void> _access() async {
+    await showPersonAccessDialog(context, api, _person);
+    try {
+      final p = await api.person(_person.id);
+      if (mounted) setState(() => _person = p);
+    } catch (_) {}
+  }
 
   Future<void> _update(Future<Person> Function() f, [String? ok]) async {
     try {
@@ -567,7 +648,10 @@ class _PersonScreenState extends State<PersonScreen> {
       key: ValueKey(p.id),
       api: api,
       title: p.name.isEmpty ? t('linux_unnamed_person') : p.name,
-      subtitle: age,
+      subtitle: [
+        ?age,
+        if (p.otherNames.isNotEmpty) '${t('also_known_as')} ${p.otherNames.join(', ')}',
+      ].join(' · ').nullIfEmpty,
       query: TimelineQuery(personId: p.id),
       actions: [
         IconButton(tooltip: t('edit_name'), icon: const Icon(Icons.edit_outlined), onPressed: _rename),
@@ -583,6 +667,16 @@ class _PersonScreenState extends State<PersonScreen> {
           onPressed: () => _update(() => api.updatePerson(p.id, isHidden: !p.isHidden)),
         ),
         IconButton(tooltip: t('merge_people'), icon: const Icon(Icons.merge_type), onPressed: _merge),
+        FutureBuilder<bool>(
+          future: _canShare,
+          builder: (context, snap) => snap.data == true || p.sharedBy.isNotEmpty || p.sharedWith.isNotEmpty
+              ? IconButton(
+                  tooltip: t('manage_person_access'),
+                  icon: const Icon(Icons.group_outlined),
+                  onPressed: _access,
+                )
+              : const SizedBox.shrink(),
+        ),
         const SizedBox(width: 8),
       ],
     );
@@ -720,4 +814,8 @@ String? ageAt(DateTime birth, DateTime when) {
   if (months < 12) return t('age_months', {'months': months});
   if (months < 24 && months > 12) return t('age_year_months', {'months': months - 12});
   return t('age_years', {'years': months ~/ 12});
+}
+
+extension on String {
+  String? get nullIfEmpty => isEmpty ? null : this;
 }

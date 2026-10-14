@@ -110,6 +110,7 @@
   "linux_password_changed": "Password changed",
   "linux_people_in_photo": "People in this photo",
   "linux_people_min_faces": "Minimum faces per person",
+  "linux_person_not_shared": "Not shared with anyone yet",
   "linux_photos_and_videos": "Photos and videos",
   "linux_pick_on_map": "Click on the map to set the location",
   "linux_pin_digits": "6 digits",

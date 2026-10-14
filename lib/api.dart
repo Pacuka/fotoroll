@@ -237,6 +237,11 @@ class Person {
   final bool isHidden;
   final bool isFavorite;
   final String? updatedAt;
+  /// v3.3 shared people: users I gave access to / who gave me access (UserResponseDto + role).
+  final List<Map<String, dynamic>> sharedWith;
+  final List<Map<String, dynamic>> sharedBy;
+  /// The same person in other users' libraries: {name, birthDate, role, sharedById}.
+  final List<Map<String, dynamic>> otherPeople;
 
   Person.fromJson(Map<String, dynamic> j)
       : id = j['id'],
@@ -244,7 +249,19 @@ class Person {
         birthDate = DateTime.tryParse(j['birthDate'] ?? ''),
         isHidden = j['isHidden'] ?? false,
         isFavorite = j['isFavorite'] ?? false,
-        updatedAt = j['updatedAt'];
+        updatedAt = j['updatedAt'],
+        sharedWith = ((j['sharedWith'] as List?) ?? const []).cast<Map<String, dynamic>>(),
+        sharedBy = ((j['sharedBy'] as List?) ?? const []).cast<Map<String, dynamic>>(),
+        otherPeople = ((j['otherPeople'] as List?) ?? const []).cast<Map<String, dynamic>>();
+
+  /// Someone else also has this person (web: PersonIndicator "Shared with me").
+  bool get isShared => otherPeople.isNotEmpty;
+
+  /// Names other users gave this person (web: "aka").
+  List<String> get otherNames => {
+        for (final o in otherPeople)
+          if ((o['name'] as String? ?? '').isNotEmpty && o['name'] != name) o['name'] as String,
+      }.toList();
 }
 
 /// A city with one representative asset (from /search/cities or /search/explore).
@@ -807,6 +824,32 @@ class ImmichApi {
   /// Users this account can share with (for partner sharing).
   Future<List<Map<String, dynamic>>> users() async =>
       (await _getJson('/users') as List).cast<Map<String, dynamic>>();
+  // ---- Shared people (v3.3: access to my people for users in my cluster group) ----
+
+  /// GET /people/users: {personId, sharedById, sharedWithId, sharedBy, sharedWith, role}.
+  /// [direction]: 'shared-by' = I gave access, 'shared-with' = I was given access.
+  Future<List<Map<String, dynamic>>> personUsers({String? personId, String? direction}) async =>
+      (await _getJson('/people/users', {'personId': personId, 'direction': direction}) as List)
+          .cast<Map<String, dynamic>>();
+  /// Gives [userIds] access to [personIds], or to all my people with [everyone].
+  Future<void> sharePeople(List<String> userIds, {List<String> personIds = const [], bool everyone = false}) =>
+      _sendJson('PUT', '/people/users', {
+        'sharedWithIds': userIds,
+        'role': 'admin',
+        if (everyone) 'type': 'everyone' else 'personIds': personIds,
+      });
+  /// Removes access: one (personId, sharedWithId) pair per entry.
+  Future<void> unsharePeople(List<(String, String)> pairs) => _sendJson('DELETE', '/people/users',
+      [for (final (personId, userId) in pairs) {'personId': personId, 'sharedWithId': userId}]);
+
+  /// The other members of my people cluster group ([] on servers before v3.2).
+  Future<List<Map<String, dynamic>>> clusterGroupOthers() async {
+    final me = await this.me();
+    final groupId = me['clusterGroupId'] as String?;
+    if (groupId == null) return [];
+    return [for (final u in await clusterGroupUsers(groupId)) if (u['id'] != me['id']) u];
+  }
+
   // ---- People cluster group (v3.2+: faces are clustered across the group's users) ----
 
   /// Members of cluster group [groupId] (UserResponseDto maps).
@@ -1021,13 +1064,19 @@ class ImmichApi {
     return list.map((e) => Album.fromJson(e)).toList();
   }
 
-  Future<List<Person>> people({bool withHidden = false}) async {
+  /// [sharedById] / [sharedWithId] (v3.3): only people that user shared with me / I shared with them.
+  Future<List<Person>> people(
+      {bool withHidden = false, String? sharedById, String? sharedWithId, bool? isFavorite, bool? isHidden}) async {
     final all = <Person>[];
     for (var page = 1;; page++) {
       final j = await _getJson('/people', {
         'withHidden': '$withHidden',
         'page': '$page',
         'size': '500',
+        'sharedById': sharedById,
+        'sharedWithId': sharedWithId,
+        'isFavorite': isFavorite?.toString(),
+        'isHidden': isHidden?.toString(),
       }) as Map<String, dynamic>;
       all.addAll((j['people'] as List).map((e) => Person.fromJson(e)));
       if (j['hasNextPage'] != true) break;

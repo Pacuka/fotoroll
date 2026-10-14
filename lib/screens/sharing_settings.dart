@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../api.dart';
 import '../i18n.dart';
+import '../widgets/person_access.dart';
 import '../widgets/user_avatar.dart';
 
 Future<void> _guard(BuildContext context, Future<void> Function() f) async {
@@ -33,51 +34,6 @@ Future<bool> _confirm(BuildContext context, String title, String prompt, {bool d
       ),
     ) ==
     true;
-
-/// Multi-select user picker (web: ClusterGroupUserSelectionModal / AddUsersModal).
-Future<List<Map<String, dynamic>>?> pickUsers(
-  BuildContext context,
-  ImmichApi api,
-  List<Map<String, dynamic>> users, {
-  String? title,
-  String? emptyMessage,
-}) =>
-    showDialog<List<Map<String, dynamic>>>(
-      context: context,
-      builder: (ctx) {
-        final picked = <String>{};
-        return StatefulBuilder(
-          builder: (ctx, setState) => AlertDialog(
-            title: Text(title ?? t('add_user')),
-            content: SizedBox(
-              width: 400,
-              child: users.isEmpty
-                  ? Text(emptyMessage ?? t('partner_page_no_more_users'))
-                  : ListView(shrinkWrap: true, children: [
-                      for (final u in users)
-                        CheckboxListTile(
-                          value: picked.contains(u['id']),
-                          onChanged: (v) =>
-                              setState(() => v! ? picked.add(u['id']) : picked.remove(u['id'])),
-                          secondary: UserAvatar(api: api, user: u),
-                          title: Text(u['name'] ?? ''),
-                          subtitle: Text(u['email'] ?? ''),
-                        ),
-                    ]),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('cancel'))),
-              FilledButton(
-                onPressed: picked.isEmpty
-                    ? null
-                    : () => Navigator.pop(ctx, [for (final u in users) if (picked.contains(u['id'])) u]),
-                child: Text(t('add')),
-              ),
-            ],
-          ),
-        );
-      },
-    );
 
 class SharingSection extends StatelessWidget {
   final ImmichApi api;
@@ -248,9 +204,17 @@ class _ClusterGroupSectionState extends State<ClusterGroupSection> {
                   _userRow(
                     u,
                     suffix: u['id'] == d.myId ? '(${t('you')})' : null,
-                    trailing: u['id'] == d.myId && canLeave
-                        ? OutlinedButton(onPressed: () => _leave(d), child: Text(t('leave')))
-                        : null,
+                    trailing: u['id'] == d.myId
+                        ? (canLeave ? OutlinedButton(onPressed: () => _leave(d), child: Text(t('leave'))) : null)
+                        // Web: ManageAccess, this member first, then the other members.
+                        : IconButton.filledTonal(
+                            tooltip: t('manage_person_access'),
+                            icon: const Icon(Icons.group_outlined),
+                            onPressed: () => showBulkShareDialog(context, api, [
+                              u,
+                              for (final o in d.members) if (o['id'] != d.myId && o['id'] != u['id']) o,
+                            ]),
+                          ),
                   ),
               ]),
             ),
