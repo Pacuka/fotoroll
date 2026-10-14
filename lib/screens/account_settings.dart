@@ -197,6 +197,7 @@ class _PrefsSectionState extends State<_PrefsSection> {
     }
     await _guard(context, () async {
       final saved = await widget.api.updatePreferences(update);
+      if (!mounted) return;
       setState(() {
         _prefs = saved;
         _loads++;

@@ -216,7 +216,7 @@ class _BulkShareDialogState extends State<_BulkShareDialog> {
 
   Future<void> _editPeople() async {
     final picked = await pickPeople(context, api, _all, _selected);
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
     setState(() {
       if (!picked.containsAll(_selected)) _everyone = false;
       _selected = picked;

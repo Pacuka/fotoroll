@@ -443,7 +443,7 @@ class _TrashPageState extends State<_TrashPage> {
       restore ? await widget.api.restoreAllTrash() : await widget.api.emptyTrash();
       messenger.showSnackBar(SnackBar(
           content: Text(restore ? t('linux_trash_restored') : t('linux_trash_emptied'))));
-      setState(() => _generation++);
+      if (mounted) setState(() => _generation++);
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('${t('error')}: $e')));
     }

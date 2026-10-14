@@ -103,12 +103,20 @@ Future<void> setAutostart(bool on, {String? executable}) async {
   await f.writeAsString(autostartEntry(executable ?? Platform.environment['APPIMAGE'] ?? Platform.resolvedExecutable));
 }
 
+/// [path] as one quoted argument of a .desktop Exec key (Desktop Entry spec):
+/// " ` \$ and \ are escaped inside the quotes, then backslashes are escaped again
+/// for the string value, and % becomes %% (field codes).
+String desktopExecArg(String path) {
+  final quoted = path.replaceAllMapped(RegExp(r'["`$\\]'), (m) => '\\${m[0]}');
+  return '"${quoted.replaceAll('\\', '\\\\').replaceAll('%', '%%')}"';
+}
+
 @visibleForTesting
 String autostartEntry(String executable) => '''[Desktop Entry]
 Type=Application
 Name=Fotoroll
 Comment=Photo and video library for your Immich server
-Exec="$executable" --hidden
+Exec=${desktopExecArg(executable)} --hidden
 Icon=$appId
 Terminal=false
 X-GNOME-Autostart-enabled=true

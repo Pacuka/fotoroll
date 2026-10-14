@@ -113,6 +113,7 @@ class _ClusterGroupSectionState extends State<ClusterGroupSection> {
   }
 
   Future<void> _viewGroup(Map<String, dynamic> request) async {
+    final users = api.clusterGroupUsers(request['clusterGroupId']);
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -120,7 +121,7 @@ class _ClusterGroupSectionState extends State<ClusterGroupSection> {
         content: SizedBox(
           width: 400,
           child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: api.clusterGroupUsers(request['clusterGroupId']),
+            future: users,
             builder: (ctx, snap) => Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,

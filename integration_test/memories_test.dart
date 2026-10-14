@@ -133,6 +133,13 @@ void main() {
     await tap(find.text("Dani's birthday"));
     await waitFor(find.text('6th birthday'));
     await shot('memories_birthday_viewer');
+    // Favorite toggles say which way they went.
+    await tap(find.byTooltip('Save'));
+    await waitFor(find.text('Added to favorites'));
+    await until(() => server.memories[1]['isSaved'] == true, 'memory saved');
+    await tap(find.byTooltip('Save'));
+    await waitFor(find.text('Removed from favorites'));
+    await until(() => server.memories[1]['isSaved'] == false, 'memory unsaved');
     await tap(find.byTooltip('Close'));
     await waitFor(find.text('Memories (3)'));
 

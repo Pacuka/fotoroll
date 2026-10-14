@@ -43,6 +43,7 @@ class _LockedFolderScreenState extends State<LockedFolderScreen> {
   Future<void> _check() async {
     try {
       final s = await widget.api.authStatus();
+      if (!mounted) return;
       final until = DateTime.tryParse(s['pinExpiresAt'] ?? '');
       if (s['pinCode'] != true) {
         setState(() => _state = _State.setup);
@@ -52,6 +53,7 @@ class _LockedFolderScreenState extends State<LockedFolderScreen> {
         setState(() => _state = _State.locked);
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _state = _State.locked;
         _error = '$e';
@@ -94,7 +96,7 @@ class _LockedFolderScreenState extends State<LockedFolderScreen> {
       _pin2.clear();
       await _open();
     } catch (e) {
-      setState(() => _error = e is ApiException && e.status == 400 ? t('wrong_pin_code') : '$e');
+      if (mounted) setState(() => _error = e is ApiException && e.status == 400 ? t('wrong_pin_code') : '$e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -104,6 +106,7 @@ class _LockedFolderScreenState extends State<LockedFolderScreen> {
     try {
       await widget.api.lockSession();
     } catch (_) {}
+    if (!mounted) return; // dispose() already freed _source
     _source?.dispose();
     setState(() {
       _source = null;

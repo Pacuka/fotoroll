@@ -418,10 +418,10 @@ class _MemoryViewerState extends State<MemoryViewer> with SingleTickerProviderSt
     final saved = _m['isSaved'] == true;
     try {
       await widget.api.updateMemory(_m['id'], {'isSaved': !saved});
+      if (!mounted) return;
       setState(() => _m['isSaved'] = !saved);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(!saved ? t('saved') : t('linux_saved'))));
-      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(!saved ? t('added_to_favorites') : t('removed_from_favorites'))));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${t('error')}: $e')));
     }

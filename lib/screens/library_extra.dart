@@ -146,6 +146,7 @@ class _TagsScreenState extends State<TagsScreen> {
     if (ok != true) return;
     try {
       await widget.api.deleteTag(tag['id']);
+      if (!mounted) return;
       setState(() {
         _selected = null;
         _source = null;

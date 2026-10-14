@@ -184,6 +184,7 @@ class _EditFacesPanelState extends State<EditFacesPanel> {
     if (ok != true || !mounted) return;
     try {
       await api.deleteFace(face.id);
+      if (!mounted) return;
       setState(() {
         _changes.remove(face.id);
         _faces = api.faces(widget.assetId);

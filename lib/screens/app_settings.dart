@@ -134,6 +134,7 @@ class _DesktopSettings extends StatefulWidget {
 }
 
 class _DesktopSettingsState extends State<_DesktopSettings> {
+  Future<MenuEntryState> _menuEntry = menuEntryState();
   bool _autostart = autostartEnabled;
 
   @override
@@ -151,7 +152,7 @@ class _DesktopSettingsState extends State<_DesktopSettings> {
         ),
         if (appImagePath != null)
           FutureBuilder<MenuEntryState>(
-            future: menuEntryState(),
+            future: _menuEntry,
             builder: (context, snap) => SwitchListTile(
               contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.app_registration),
@@ -161,7 +162,11 @@ class _DesktopSettingsState extends State<_DesktopSettings> {
               onChanged: snap.hasData
                   ? (v) async {
                       v ? await installMenuEntry() : await removeMenuEntry();
-                      if (mounted) setState(() {});
+                      if (mounted) {
+                        setState(() {
+                          _menuEntry = menuEntryState();
+                        });
+                      }
                     }
                   : null,
             ),

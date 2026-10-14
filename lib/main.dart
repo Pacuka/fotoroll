@@ -79,6 +79,7 @@ class _FotorollAppState extends State<FotorollApp> {
     setState(() => _api = null);
     await _store.clear();
     await api?.logout();
+    api?.close();
   }
 
   /// Colors of the Immich web client: blue on white, light blue on black.

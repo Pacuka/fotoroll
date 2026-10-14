@@ -32,6 +32,13 @@ void main() {
     expect(e, contains('Icon=io.github.pacuka.Fotoroll'));
   });
 
+  test('Exec quoting follows the Desktop Entry spec', () {
+    expect(desktopExecArg('/home/x/My Apps/Fotoroll.AppImage'), '"/home/x/My Apps/Fotoroll.AppImage"');
+    // In the file: \\" for a quote, \\\\ for a backslash, \\$ for a dollar, %% for a percent.
+    expect(desktopExecArg(r'/a "b"/c$d/e\f/100%'), r'"/a \\"b\\"/c\\$d/e\\\\f/100%%"');
+    expect(desktopExecArg('/a`b'), r'"/a\\`b"');
+  });
+
   test('AppImage menu entry starts the AppImage file and matches the window', () {
     final e = desktopEntry('/home/x/Apps/Fotoroll-0.9.1-x86_64.AppImage');
     expect(e, contains('Exec="/home/x/Apps/Fotoroll-0.9.1-x86_64.AppImage" %U'));

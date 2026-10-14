@@ -88,6 +88,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             g.id, _keep.toList(), all.where((id) => !_keep.contains(id)).toList());
       }
       groups.removeAt(_index);
+      if (!mounted) return;
       setState(() => _select(groups, _index.clamp(0, groups.isEmpty ? 0 : groups.length - 1)));
       if (groups.isEmpty && mounted) {
         ScaffoldMessenger.of(context)

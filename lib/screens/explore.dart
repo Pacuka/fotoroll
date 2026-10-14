@@ -611,6 +611,7 @@ class _PersonScreenState extends State<PersonScreen> {
   Future<void> _update(Future<Person> Function() f, [String? ok]) async {
     try {
       final p = await f();
+      if (!mounted) return;
       setState(() => _person = p);
       if (mounted && ok != null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok)));
     } catch (e) {

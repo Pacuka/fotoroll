@@ -6,7 +6,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
-import 'window.dart' show appId;
+import 'window.dart' show appId, desktopExecArg;
 
 /// Path of the running AppImage file (set by the AppImage runtime), or null.
 String? get appImagePath => Platform.environment['APPIMAGE'];
@@ -27,7 +27,7 @@ Type=Application
 Name=Fotoroll
 GenericName=Photo Library
 Comment=Browse, back up and manage the photos on your Immich server
-Exec="$executable" %U
+Exec=${desktopExecArg(executable)} %U
 Icon=$appId
 Terminal=false
 Categories=Graphics;Photography;
@@ -46,7 +46,7 @@ Future<MenuEntryState> menuEntryState() async {
   if (!await _desktopFile.exists()) return MenuEntryState.missing;
   final text = await _desktopFile.readAsString();
   if (!text.contains('X-Fotoroll-AppImage=true')) return MenuEntryState.current;
-  return text.contains('Exec="$image"') ? MenuEntryState.current : MenuEntryState.outdated;
+  return text.contains('Exec=${desktopExecArg(image)} ') ? MenuEntryState.current : MenuEntryState.outdated;
 }
 
 /// Writes the menu entry and icon for the running AppImage.

@@ -65,6 +65,7 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
       final spec = jsonDecode(await rootBundle.loadString('assets/admin/system_settings.json'));
       final cfg = await widget.api.systemConfig();
       final defaults = await widget.api.systemConfigDefaults();
+      if (!mounted) return;
       setState(() {
         _sections = (spec['sections'] as List).cast<Map<String, dynamic>>();
         _saved = cfg;
@@ -109,6 +110,7 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
     }
     try {
       final result = await widget.api.updateSystemConfig(payload);
+      if (!mounted) return;
       setState(() {
         final edit = paths == null ? _deepCopy(result) : _deepCopy(_edit!);
         for (final path in paths ?? const <String>[]) {
@@ -153,6 +155,7 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
     if (file == null) return;
     try {
       final cfg = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+      if (!mounted) return;
       setState(() {
         _edit = cfg;
         _rev++;

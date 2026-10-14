@@ -6,6 +6,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 
 import 'i18n.dart';
 
@@ -433,7 +434,20 @@ class SearchPage {
 
 class ImmichApi {
   final Credentials creds;
-  final http.Client _client = http.Client();
+  final http.Client _client = _newClient();
+
+  // Without limits a dead connection (after suspend, a Wi-Fi switch) waits forever,
+  // and a stuck folder-backup upload would block every later backup run.
+  static Duration connectTimeout = const Duration(seconds: 15);
+  /// For JSON calls: the whole response.
+  static Duration requestTimeout = const Duration(seconds: 90);
+  /// For downloads / uploads: how long the transfer may stall (no bytes moving).
+  static Duration stallTimeout = const Duration(seconds: 60);
+
+  static http.Client _newClient() => IOClient(HttpClient()..connectionTimeout = connectTimeout);
+
+  /// Frees the connections (after logout).
+  void close() => _client.close();
 
   ImmichApi(this.creds);
 
@@ -473,7 +487,9 @@ class ImmichApi {
   static Future<http.Response> _send(Future<http.Response> Function() req) async {
     final http.Response res;
     try {
-      res = await req();
+      res = await req().timeout(requestTimeout);
+    } on TimeoutException {
+      throw ApiException(t('linux_err_timeout'));
     } on SocketException catch (e) {
       throw ApiException(t('linux_err_unreachable', {'error': e.message}));
     } on HandshakeException {
@@ -1253,8 +1269,23 @@ class ImmichApi {
     Future<void>? abortTrigger,
   }) async {
     final name = file.uri.pathSegments.last;
+    // Abort when no bytes moved for [stallTimeout] (or the server sits on the response).
+    final stalled = Completer<void>();
+    Timer? watchdog;
+    void arm(Duration d) {
+      watchdog?.cancel();
+      watchdog = Timer(d, () {
+        if (!stalled.isCompleted) stalled.complete();
+      });
+    }
+
+    arm(stallTimeout);
     final req = _ProgressMultipartRequest('POST', _uri('/assets'),
-        abortTrigger: abortTrigger, onProgress: onProgress)
+        abortTrigger: Future.any([stalled.future, ?abortTrigger]), onProgress: (sent, total) {
+      // Once the body is out, the server still stores the file before answering.
+      arm(sent >= total ? requestTimeout : stallTimeout);
+      onProgress?.call(sent, total);
+    })
       ..headers.addAll(headers)
       ..fields.addAll({
         'fileCreatedAt': createdAt.toUtc().toIso8601String(),
@@ -1266,12 +1297,19 @@ class ImmichApi {
           filename: name));
     if (sha1 != null) req.headers['x-immich-checksum'] = sha1;
     final http.StreamedResponse res;
+    final String body;
     try {
       res = await _client.send(req);
+      arm(stallTimeout);
+      body = await res.stream.bytesToString();
     } on SocketException catch (e) {
       throw ApiException(t('linux_err_unreachable', {'error': e.message}));
+    } on http.RequestAbortedException {
+      if (stalled.isCompleted) throw ApiException(t('linux_err_timeout'));
+      rethrow;
+    } finally {
+      watchdog?.cancel();
     }
-    final body = await res.stream.bytesToString();
     if (res.statusCode == 413) throw ApiException(t('linux_err_too_large'), 413);
     if (res.statusCode != 200 && res.statusCode != 201) {
       String msg = t('linux_err_upload');
@@ -1326,7 +1364,9 @@ class ImmichApi {
   Future<http.StreamedResponse> _sendStream(http.BaseRequest req) async {
     final http.StreamedResponse res;
     try {
-      res = await _client.send(req);
+      res = await _client.send(req).timeout(requestTimeout);
+    } on TimeoutException {
+      throw ApiException(t('linux_err_timeout'));
     } on SocketException catch (e) {
       throw ApiException(t('linux_err_unreachable', {'error': e.message}));
     }
@@ -1334,7 +1374,18 @@ class ImmichApi {
       await res.stream.drain<void>().catchError((_) {});
       throw ApiException(t('linux_err_download'), res.statusCode);
     }
-    return res;
+    // A transfer that stops moving fails instead of hanging.
+    return http.StreamedResponse(
+      res.stream.timeout(stallTimeout, onTimeout: (sink) {
+        sink.addError(ApiException(t('linux_err_timeout')));
+        sink.close();
+      }),
+      res.statusCode,
+      contentLength: res.contentLength,
+      request: res.request,
+      headers: res.headers,
+      reasonPhrase: res.reasonPhrase,
+    );
   }
 
   /// Writes [res] to "[target].part" and renames it when complete, so an interrupted

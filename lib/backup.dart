@@ -383,6 +383,7 @@ class BackupService extends ChangeNotifier {
         // Linux has no reliable birth time here; the server prefers EXIF dates anyway.
         createdAt: st.modified,
         modifiedAt: st.modified,
+        sha1: rec.sha1,
         abortTrigger: abort.future,
         onProgress: (sent, total) {
           currentSent = sent;

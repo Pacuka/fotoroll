@@ -329,6 +329,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
     if (ok != true) return;
     await _guard(() async {
       final a = await api.updateAlbum(_album.id, name: name.text.trim(), description: desc.text.trim());
+      if (!mounted) return;
       setState(() => _album = a);
       _toast(t('album_info_updated'));
     });
@@ -336,6 +337,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
 
   Future<void> _setOrder(String order) => _guard(() async {
         final a = await api.updateAlbum(_album.id, order: order);
+        if (!mounted) return;
         setState(() {
           _album = a;
           _source = _load();
@@ -344,7 +346,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
 
   Future<void> _toggleActivity() => _guard(() async {
         final a = await api.updateAlbum(_album.id, isActivityEnabled: !_album.isActivityEnabled);
-        setState(() => _album = a);
+        if (mounted) setState(() => _album = a);
       });
 
   Future<void> _delete() async {

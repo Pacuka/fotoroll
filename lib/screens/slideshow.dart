@@ -211,7 +211,7 @@ class _SlideshowScreenState extends State<SlideshowScreen> with SingleTickerProv
       _prefs = p;
       await settings.update(slideshow: p);
       if (reorder) _order = SlideshowOrder(widget.source.length, _index, p.direction);
-      setState(() {});
+      if (mounted) setState(() {});
     }
     if (wasPlaying && mounted) {
       _togglePlay();
