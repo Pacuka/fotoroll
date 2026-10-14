@@ -1,5 +1,5 @@
 // Account Settings (web: /user-settings): account, password, PIN code, API keys,
-// authorized devices and partner sharing.
+// authorized devices and sharing (sharing_settings.dart).
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../api.dart';
 import '../i18n.dart';
 import 'app_settings.dart' show AppSettingsBody;
+import 'sharing_settings.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   final ImmichApi api;
@@ -46,12 +47,12 @@ class AccountSettingsScreen extends StatelessWidget {
             section(Icons.notifications_outlined, t('notifications'), t('notifications_setting_description'),
                 _PrefsSection(api: api, groups: _notificationPrefs)),
             section(Icons.password, t('password'), t('change_your_password'), _PasswordSection(api: api)),
-            section(Icons.group_outlined, t('partner_sharing'), t('manage_sharing_with_partners'),
-                _PartnersSection(api: api)),
             section(Icons.pin_outlined, t('user_pin_code_settings'), t('user_pin_code_settings_description'),
                 _PinSection(api: api)),
             section(Icons.workspace_premium_outlined, t('user_purchase_settings'),
                 t('user_purchase_settings_description'), _PurchaseSection(api: api)),
+            section(Icons.share_outlined, t('sharing'), t('manage_sharing_with_other_users'),
+                SharingSection(api: api)),
           ]),
         ),
       ),
@@ -729,103 +730,6 @@ class _SessionsSectionState extends State<_SessionsSection> {
                 child: Text(t('log_out_all_devices')),
               ),
             ),
-        ]);
-      },
-    );
-  }
-}
-
-class _PartnersSection extends StatefulWidget {
-  final ImmichApi api;
-  const _PartnersSection({required this.api});
-
-  @override
-  State<_PartnersSection> createState() => _PartnersSectionState();
-}
-
-class _PartnersSectionState extends State<_PartnersSection> {
-  late Future<List<List<Partner>>> _data = _load();
-
-  Future<List<List<Partner>>> _load() =>
-      Future.wait([widget.api.partners('shared-by'), widget.api.partners('shared-with')]);
-
-  void _reload() => setState(() => _data = _load());
-
-  Future<void> _add(List<Partner> existing) async {
-    await _guard(context, () async {
-      final me = await widget.api.me();
-      final users = (await widget.api.users())
-          .where((u) => u['id'] != me['id'] && !existing.any((p) => p.id == u['id']))
-          .toList();
-      if (!mounted) return;
-      final picked = await showDialog<String>(
-        context: context,
-        builder: (ctx) => SimpleDialog(
-          title: Text(t('linux_choose_user')),
-          children: [
-            for (final u in users)
-              SimpleDialogOption(
-                onPressed: () => Navigator.pop(ctx, u['id'] as String),
-                child: ListTile(title: Text(u['name'] ?? ''), subtitle: Text(u['email'] ?? '')),
-              ),
-          ],
-        ),
-      );
-      if (picked == null) return;
-      await widget.api.addPartner(picked);
-      _reload();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return FutureBuilder<List<List<Partner>>>(
-      future: _data,
-      builder: (context, snap) {
-        if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-        final sharedBy = snap.data![0];
-        final sharedWith = snap.data![1];
-        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text(t('linux_you_share_with'), style: theme.textTheme.titleSmall),
-          if (sharedBy.isEmpty) Text(t('linux_no_partners')),
-          for (final p in sharedBy)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(p.name),
-              subtitle: Text(p.email),
-              trailing: IconButton(
-                tooltip: t('delete'),
-                icon: const Icon(Icons.person_remove_outlined),
-                onPressed: () => _guard(context, () async {
-                  await widget.api.removePartner(p.id);
-                  _reload();
-                }),
-              ),
-            ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.tonalIcon(
-              onPressed: () => _add(sharedBy),
-              icon: const Icon(Icons.person_add_outlined),
-              label: Text(t('add_partner')),
-            ),
-          ),
-          if (sharedWith.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(t('linux_shared_with_you'), style: theme.textTheme.titleSmall),
-            for (final p in sharedWith)
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(p.name),
-                subtitle: Text(t('show_in_timeline')),
-                value: p.inTimeline,
-                onChanged: (v) => _guard(context, () async {
-                  await widget.api.setPartnerInTimeline(p.id, v);
-                  _reload();
-                }),
-              ),
-          ],
         ]);
       },
     );

@@ -9,7 +9,7 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 
 | Feature | Web source | Status |
 |---|---|---|
-| Sharing settings: cluster group (invite users, pending requests, accept/decline, leave, reset facial recognition) | `user-settings/SharingSettings.svelte` | ⬜ |
+| Sharing settings: cluster group (invite users, pending requests, accept/decline, leave, reset facial recognition) | `user-settings/SharingSettings.svelte` | ✅ |
 | Shared people: manage access per person and in bulk, "shared with me" indicator, filter people by shared by / with | `PersonEditAccessModal`, `PersonBulkShareModal`, `PeopleFilterModal`, `PersonIndicator` | ⬜ |
 | Person edit: name + birth date in one dialog, "only change for me" for shared people; Features → people update strategy | `PersonEditModal`, `FeatureSettings.svelte` | ⬜ |
 | Memories page (current / upcoming, favorite memories, filters) and birthday memories | `/memories`, `MemoryCard`, `MemoriesSettingsModal` | ⬜ |
@@ -77,7 +77,7 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | Authorized devices | ✅ |
 | Download / Features / Notifications preferences | ✅ |
 | Password | ✅ |
-| Partner sharing | ✅ |
+| Sharing (people cluster group + partners) | ✅ |
 | PIN code | ✅ |
 | Purchase | 🟡 status only |
 | OAuth link/unlink | ⬜ |

@@ -807,6 +807,28 @@ class ImmichApi {
   /// Users this account can share with (for partner sharing).
   Future<List<Map<String, dynamic>>> users() async =>
       (await _getJson('/users') as List).cast<Map<String, dynamic>>();
+  // ---- People cluster group (v3.2+: faces are clustered across the group's users) ----
+
+  /// Members of cluster group [groupId] (UserResponseDto maps).
+  Future<List<Map<String, dynamic>>> clusterGroupUsers(String groupId) async =>
+      (await _getJson('/cluster-groups/$groupId/users') as List).cast<Map<String, dynamic>>();
+  /// Invitations sent from group [groupId]: {id, clusterGroupId, userId, createdAt}.
+  Future<List<Map<String, dynamic>>> clusterGroupSentRequests(String groupId) async =>
+      (await _getJson('/cluster-groups/$groupId/requests') as List).cast<Map<String, dynamic>>();
+  /// Invitations the current user received to join other groups.
+  Future<List<Map<String, dynamic>>> clusterGroupReceivedRequests() async =>
+      (await _getJson('/cluster-groups/requests') as List).cast<Map<String, dynamic>>();
+  Future<void> inviteToClusterGroup(String groupId, String userId) =>
+      _sendJson('PUT', '/cluster-groups/$groupId/requests', {'userId': userId});
+  Future<void> acceptClusterGroupRequest(String requestId) =>
+      _sendJson('POST', '/cluster-groups/requests/$requestId/accept');
+  /// Declines a received invitation or cancels a sent one.
+  Future<void> deleteClusterGroupRequest(String requestId) =>
+      _sendJson('DELETE', '/cluster-groups/requests/$requestId');
+  Future<void> leaveClusterGroup(String groupId) => _sendJson('POST', '/cluster-groups/$groupId/leave');
+  Future<void> regenerateClusterGroupPeople(String groupId) =>
+      _sendJson('POST', '/cluster-groups/$groupId/regenerate-people');
+
   Future<void> addPartner(String userId) =>
       _sendJson('POST', '/partners', {'sharedWithId': userId});
   Future<void> removePartner(String userId) => _sendJson('DELETE', '/partners/$userId');

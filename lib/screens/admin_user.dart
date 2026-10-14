@@ -50,7 +50,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
         r[2] as Map<String, dynamic>, (r[3] as List).cast<Map<String, dynamic>>());
   }
 
-  void _reload() => setState(() => _data = _load());
+  void _reload() => setState(() { _data = _load(); });
 
   void _toast(String msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 

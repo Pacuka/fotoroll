@@ -46,7 +46,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
   Future<(List<Album>, String)> _load() async =>
       (await widget.api.albums(), (await widget.api.me())['id'] as String);
 
-  void _reload() => setState(() => _data = _load());
+  void _reload() => setState(() { _data = _load(); });
 
   Future<void> _create() async {
     final album = await createAlbumDialog(context, widget.api);
@@ -281,7 +281,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
 
   void _reloadAll() {
     _refreshAlbum();
-    setState(() => _source = _load());
+    setState(() { _source = _load(); });
   }
 
   void _toast(String msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));

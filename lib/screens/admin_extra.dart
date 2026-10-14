@@ -39,7 +39,7 @@ class _LibrariesScreenState extends State<LibrariesScreen> {
   Future<(List<Map<String, dynamic>>, List<Map<String, dynamic>>)> _load() async =>
       (await widget.api.libraries(), await widget.api.adminUsers());
 
-  void _reload() => setState(() => _data = _load());
+  void _reload() => setState(() { _data = _load(); });
 
   Future<void> _run(Future<void> Function() f, [String? ok]) async {
     try {

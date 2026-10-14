@@ -49,6 +49,20 @@ class FakeImmich {
     (a['exifInfo'] as Map)['projectionType'] = 'EQUIRECTANGULAR';
   }
 
+  /// Other users of the server (GET /api/users), e.g. for invitations.
+  final otherUsers = [
+    for (final (i, name) in [(901, 'Anna'), (902, 'Bence'), (903, 'Csilla')])
+      {'id': uid(i), 'name': name, 'email': '${name.toLowerCase()}@example.com', 'avatarColor': 'green',
+       'profileImagePath': '', 'profileChangedAt': '2026-01-01T00:00:00.000Z'},
+  ];
+  /// User id -> cluster group id (v3.2+). Everyone starts in a group of their own.
+  late final clusterGroupOf = {for (final u in [me, ...otherUsers]) u['id'] as String: 'g-${u['id']}'};
+  /// Pending invitations: id, clusterGroupId, userId, createdAt.
+  final clusterRequests = <Map<String, dynamic>>[];
+  /// Cluster groups whose facial recognition was reset.
+  final regeneratedGroups = <String>[];
+  Map<String, dynamic> _user(String id) => [me, ...otherUsers].firstWhere((u) => u['id'] == id);
+
   final me = {
     'id': uid(900), 'name': 'Tester', 'email': 't@example.com', 'isAdmin': true,
     'profileChangedAt': '2026-01-01T00:00:00.000Z', 'quotaUsageInBytes': 1000, 'quotaSizeInBytes': null,
@@ -164,7 +178,36 @@ class FakeImmich {
     }
 
     if (path == '/api/users/me' && m == 'GET') {
-      out = me;
+      out = {...me, 'clusterGroupId': clusterGroupOf[me['id']]};
+    } else if (path == '/api/users' && m == 'GET') {
+      out = [me, ...otherUsers];
+    } else if (match(r'/api/cluster-groups/([\w-]+)/users') case final g?) {
+      out = [for (final e in clusterGroupOf.entries) if (e.value == g[1]) _user(e.key)];
+    } else if (path == '/api/cluster-groups/requests' && m == 'GET') {
+      out = clusterRequests.where((r) => r['userId'] == me['id']).toList();
+    } else if (match(r'/api/cluster-groups/([\w-]+)/requests') case final g?) {
+      if (m == 'PUT') {
+        final r = {'id': uid(_nextId++), 'clusterGroupId': g[1], 'userId': body['userId'],
+          'createdAt': '2026-10-14T00:00:00.000Z'};
+        clusterRequests.add(r);
+        out = r;
+      } else {
+        out = clusterRequests.where((r) => r['clusterGroupId'] == g[1]).toList();
+      }
+    } else if (match(r'/api/cluster-groups/requests/([\w-]+)/accept') case final g?) {
+      final r = clusterRequests.firstWhere((r) => r['id'] == g[1]);
+      clusterRequests.remove(r);
+      clusterGroupOf[r['userId']] = r['clusterGroupId'];
+      status = 204;
+    } else if (match(r'/api/cluster-groups/requests/([\w-]+)') case final g? when m == 'DELETE') {
+      clusterRequests.removeWhere((r) => r['id'] == g[1]);
+      status = 204;
+    } else if (match(r'/api/cluster-groups/([\w-]+)/leave') != null) {
+      clusterGroupOf[me['id'] as String] = 'g-new-${_nextId++}';
+      status = 204;
+    } else if (match(r'/api/cluster-groups/([\w-]+)/regenerate-people') case final g?) {
+      regeneratedGroups.add(g[1]!);
+      status = 204;
     } else if (path == '/api/server/storage') {
       out = {'diskUse': '1 GiB', 'diskSize': '10 GiB', 'diskUsagePercentage': 10};
     } else if (path == '/api/server/version') {

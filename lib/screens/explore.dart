@@ -38,7 +38,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final api = widget.api;
     return Loader<_ExploreData>(
       future: _data,
-      onRetry: () => setState(() => _data = _load()),
+      onRetry: () => setState(() { _data = _load(); }),
       builder: (d) => ListView(
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
