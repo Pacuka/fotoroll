@@ -340,8 +340,25 @@ class FakeImmich {
       if (body['description'] != null) a['description'] = body['description'];
       if (body['order'] != null) a['order'] = body['order'];
       out = _album(a);
-    } else if (path == '/api/memories' && m == 'GET') {
-      out = memories;
+    } else if (path == '/api/memories' || path == '/api/memories/statistics') {
+      // `for` = today's lane; otherwise the memories page with its filters (v3.2+).
+      final now = DateTime.now();
+      final list = [
+        for (final mem in memories)
+          if (q['for'] != null
+              ? mem['lane'] != false
+              : (q['isSaved'] == null || '${mem['isSaved']}' == q['isSaved']) &&
+                  (q['isUpcoming'] != 'false' ||
+                      !(DateTime.tryParse(mem['showAt'] as String? ?? '')?.isAfter(now) ?? false)))
+            mem,
+      ];
+      if (path.endsWith('statistics')) {
+        out = {'total': list.length};
+      } else {
+        final size = int.tryParse(q['size'] ?? '') ?? list.length;
+        final page = int.tryParse(q['page'] ?? '') ?? 1;
+        out = list.skip((page - 1) * size).take(size).toList();
+      }
     } else if (match(r'/api/memories/([\w-]+)') != null && m == 'PUT') {
       final mem = memories.firstWhere((x) => x['id'] == match(r'/api/memories/([\w-]+)')![1]);
       (body as Map).forEach((k, v) => mem[k] = v);
@@ -460,7 +477,7 @@ class FakeImmich {
     } else if (path == '/api/users/me/preferences') {
       // Every optional sidebar entry on, so the test visits them all.
       out = {
-        'folders': {'enabled': true, 'sidebarWeb': true}, 'memories': {'enabled': true},
+        'folders': {'enabled': true, 'sidebarWeb': true}, 'memories': {'enabled': true, 'sidebarWeb': true},
         'people': {'enabled': true, 'sidebarWeb': true, 'updateStrategy': 'self'}, 'ratings': {'enabled': true},
         'tags': {'enabled': true, 'sidebarWeb': true}, 'sharedLinks': {'enabled': true, 'sidebarWeb': true},
         'recentlyAdded': {'sidebarWeb': true},

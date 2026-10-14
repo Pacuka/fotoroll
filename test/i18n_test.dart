@@ -31,6 +31,15 @@ void main() {
         {'a': 'x', 'n': 2}), 'X 2 many');
   });
 
+  test('selectordinal uses ordinal rules (Immich birthday_memory_age)', () {
+    const m = '{age, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} birthday';
+    expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 103].map((n) => fmt(m, {'age': n})).toList(), [
+      '1st birthday', '2nd birthday', '3rd birthday', '4th birthday', '11th birthday', '12th birthday',
+      '13th birthday', '21st birthday', '22nd birthday', '103rd birthday',
+    ]);
+    expect(fmt('{age, selectordinal, one {#.} other {#.}} születésnapja', {'age': 2}, 'hu'), '2. születésnapja');
+  });
+
   test('date and number styles', () {
     expect(fmt('on {date, date, long}', {'date': DateTime(2026, 3, 1)}), 'on March 1, 2026');
     expect(fmt('{n, number}', {'n': 1500}), '1,500');

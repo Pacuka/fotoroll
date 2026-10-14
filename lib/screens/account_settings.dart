@@ -103,6 +103,8 @@ const _featurePrefs = [
   _PrefGroup('time_based_memories', 'photos_from_previous_years', [
     _Pref('memories.enabled', 'enable', _Kind.toggle),
     _Pref('memories.duration', 'duration', _Kind.number, desc: 'time_based_memories_duration'),
+    _Pref('memories.sidebarWeb', 'sidebar', _Kind.toggle,
+        desc: 'sidebar_display_description', requires: 'memories.enabled'),
   ]),
   _PrefGroup('people', 'people_feature_description', [
     _Pref('people.enabled', 'enable', _Kind.toggle),

@@ -8,12 +8,14 @@ import '../sources.dart';
 import '../widgets/asset_actions.dart';
 import '../widgets/timeline_view.dart';
 import '../widgets/loader.dart';
+import '../widgets/memories.dart';
 import '../widgets/person_access.dart';
 
 class _ExploreData {
   final List<Person> people;
   final List<Place> places;
-  const _ExploreData(this.people, this.places);
+  final List<Map<String, dynamic>> memories;
+  const _ExploreData(this.people, this.places, this.memories);
 }
 
 class ExploreScreen extends StatefulWidget {
@@ -28,8 +30,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
   late Future<_ExploreData> _data = _load();
 
   Future<_ExploreData> _load() async {
-    final r = await Future.wait([widget.api.people(), widget.api.explorePlaces()]);
-    return _ExploreData(r[0] as List<Person>, r[1] as List<Place>);
+    final r = await Future.wait([
+      widget.api.people(),
+      widget.api.explorePlaces(),
+      // The memories page exists since v3.2; older servers just show no section.
+      widget.api
+          .searchMemories(size: 20, isUpcoming: false)
+          .catchError((_) => <Map<String, dynamic>>[]),
+    ]);
+    final memories = [
+      for (final m in r[2] as List<Map<String, dynamic>>)
+        if ((m['assets'] as List?)?.isNotEmpty ?? false) m,
+    ];
+    return _ExploreData(r[0] as List<Person>, r[1] as List<Place>, memories);
   }
 
   void _push(Widget page) =>
@@ -80,6 +93,26 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     api: api,
                     place: d.places[i],
                     onTap: () => _push(PlaceScreen(api: api, place: d.places[i])),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          if (d.memories.isNotEmpty) ...[
+            _SectionHeader(t('memories'), onAll: () => _push(MemoriesScreen(api: api))),
+            SizedBox(
+              height: 150,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: d.memories.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                itemBuilder: (context, i) => SizedBox(
+                  width: 240,
+                  child: MemoryCard(
+                    api: api,
+                    memory: d.memories[i],
+                    onTap: () => openMemory(context, api, d.memories, i),
                   ),
                 ),
               ),

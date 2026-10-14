@@ -30,7 +30,7 @@ import 'map_screen.dart';
 import 'search.dart';
 
 enum _Page {
-  photos, explore, map, people, sharedLinks, sharing, favorites, albums, tags, recent, folders,
+  photos, explore, map, memories, people, sharedLinks, sharing, favorites, albums, tags, recent, folders,
   utilities, archive, locked, trash, backup, search, account, admin,
 }
 
@@ -53,6 +53,7 @@ class _NavEntry {
       const _NavEntry(_Page.photos, 'photos', Icons.photo_library_outlined, Icons.photo_library),
       const _NavEntry(_Page.explore, 'explore', Icons.search, Icons.search),
       const _NavEntry(_Page.map, 'map', Icons.map_outlined, Icons.map),
+      if (side('memories')) const _NavEntry(_Page.memories, 'memories', Icons.style_outlined, Icons.style),
       if (side('people')) const _NavEntry(_Page.people, 'people', Icons.person_outline, Icons.person),
       if (side('sharedLinks')) const _NavEntry(_Page.sharedLinks, 'shared_links', Icons.link, Icons.link),
       const _NavEntry(_Page.sharing, 'sharing', Icons.group_outlined, Icons.group),
@@ -291,6 +292,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ));
       case _Page.people:
         return PeopleScreen(api: api);
+      case _Page.memories:
+        return MemoriesScreen(api: api);
       case _Page.sharedLinks:
         return _Titled(t('shared_links'), child: SharedLinksScreen(api: api));
       case _Page.tags:

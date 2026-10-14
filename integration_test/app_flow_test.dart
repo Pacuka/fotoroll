@@ -96,7 +96,7 @@ void main() {
 
     // 1. Every sidebar page builds.
     for (final page in [
-      'Explore', 'Map', 'People', 'Shared links', 'Sharing', 'Favorites', 'Albums', 'Tags',
+      'Explore', 'Map', 'Memories', 'People', 'Shared links', 'Sharing', 'Favorites', 'Albums', 'Tags',
       'Recently added', 'Folders', 'Utilities', 'Archive', 'Locked Folder', 'Trash', 'Backup', 'Photos',
     ]) {
       final item = find.text(page, skipOffstage: false).first;

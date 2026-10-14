@@ -58,6 +58,9 @@ class AppSettings extends ChangeNotifier {
   bool closeToTray = true;
   /// The AppImage asked once whether to add itself to the app menu.
   bool menuEntryAsked = false;
+  /// Memories page filters (web: MemoriesSettingsModal, kept in localStorage there).
+  bool memoriesShowUpcoming = false;
+  bool memoriesOnlyFavorites = false;
 
   AppSettings({String? configDir})
       : _dir = configDir ?? appConfigDir();
@@ -76,6 +79,8 @@ class AppSettings extends ChangeNotifier {
       slideshow = SlideshowPrefs.fromJson((j['slideshow'] as Map?)?.cast<String, dynamic>() ?? {});
       closeToTray = j['closeToTray'] as bool? ?? true;
       menuEntryAsked = j['menuEntryAsked'] as bool? ?? false;
+      memoriesShowUpcoming = j['memoriesShowUpcoming'] as bool? ?? false;
+      memoriesOnlyFavorites = j['memoriesOnlyFavorites'] as bool? ?? false;
     } catch (_) {}
   }
 
@@ -86,7 +91,11 @@ class AppSettings extends ChangeNotifier {
     SlideshowPrefs? slideshow,
     bool? closeToTray,
     bool? menuEntryAsked,
+    bool? memoriesShowUpcoming,
+    bool? memoriesOnlyFavorites,
   }) async {
+    if (memoriesShowUpcoming != null) this.memoriesShowUpcoming = memoriesShowUpcoming;
+    if (memoriesOnlyFavorites != null) this.memoriesOnlyFavorites = memoriesOnlyFavorites;
     if (menuEntryAsked != null) this.menuEntryAsked = menuEntryAsked;
     if (slideshow != null) this.slideshow = slideshow;
     if (closeToTray != null) this.closeToTray = closeToTray;
@@ -103,6 +112,8 @@ class AppSettings extends ChangeNotifier {
         'slideshow': this.slideshow.toJson(),
         'closeToTray': this.closeToTray,
         'menuEntryAsked': this.menuEntryAsked,
+        'memoriesShowUpcoming': this.memoriesShowUpcoming,
+        'memoriesOnlyFavorites': this.memoriesOnlyFavorites,
       }));
     } catch (_) {}
   }

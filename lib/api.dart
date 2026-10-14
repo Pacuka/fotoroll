@@ -685,6 +685,25 @@ class ImmichApi {
         '${d.day.toString().padLeft(2, '0')}';
     return (await _getJson('/memories', {'for': day}) as List).cast<Map<String, dynamic>>();
   }
+  /// All memories, newest first (v3.2+ memories page). [isUpcoming]: false hides ones not shown yet.
+  Future<List<Map<String, dynamic>>> searchMemories(
+          {int page = 1, int size = 50, bool? isSaved, bool? isUpcoming}) async =>
+      (await _getJson('/memories', {
+        'order': 'desc',
+        'page': '$page',
+        'size': '$size',
+        'isSaved': isSaved?.toString(),
+        'isUpcoming': isUpcoming?.toString(),
+      }) as List)
+          .cast<Map<String, dynamic>>();
+  /// Number of memories matching the same filters.
+  Future<int> memoryCount({bool? isSaved, bool? isUpcoming}) async =>
+      ((await _getJson('/memories/statistics', {
+        'order': 'desc',
+        'isSaved': isSaved?.toString(),
+        'isUpcoming': isUpcoming?.toString(),
+      }))['total'] as num)
+          .toInt();
   Future<void> updateMemory(String id, Map<String, dynamic> changes) =>
       _sendJson('PUT', '/memories/$id', changes);
 

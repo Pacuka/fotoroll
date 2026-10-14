@@ -131,7 +131,7 @@ final i18n = I18n();
 /// Translate [key] with optional ICU [args].
 String t(String key, [Map<String, Object?> args = const {}]) => i18n.t(key, args);
 
-/// Minimal ICU MessageFormat: {arg}, plural (=N, zero/one/two/few/many/other, #),
+/// Minimal ICU MessageFormat: {arg}, plural / selectordinal (=N, zero/one/two/few/many/other, #),
 /// select, and apostrophe quoting. Enough for Immich's translation files.
 class IcuFormat {
   final String src;
@@ -246,7 +246,7 @@ class IcuFormat {
       if (positions.containsKey('=$n')) {
         chosen = '=$n';
       } else {
-        final cat = _pluralCategory(hash);
+        final cat = type == 'selectordinal' ? _ordinalCategory(hash) : _pluralCategory(hash);
         chosen = positions.containsKey(cat) ? cat : 'other';
       }
     } else {
@@ -282,6 +282,16 @@ class IcuFormat {
       }
       _i++;
     }
+  }
+
+  /// CLDR ordinal categories (1st, 2nd, 3rd). Only English distinguishes them among
+  /// the languages whose Immich strings use selectordinal; others say "other".
+  String _ordinalCategory(num n) {
+    if (!locale.startsWith('en') || n is! int) return 'other';
+    if (n % 10 == 1 && n % 100 != 11) return 'one';
+    if (n % 10 == 2 && n % 100 != 12) return 'two';
+    if (n % 10 == 3 && n % 100 != 13) return 'few';
+    return 'other';
   }
 
   String _pluralCategory(num n) {
