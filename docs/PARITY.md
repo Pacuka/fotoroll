@@ -17,7 +17,7 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | API key rotate | `api-key.service.ts` | ⬜ |
 | Tag renaming | `TagEditModal` | ⬜ |
 | Map: show assets in the current viewport | `map/` | ⬜ |
-| Slideshow: metadata overlay mode (full / description only) | `SlideshowSettingsModal` | ⬜ |
+| Slideshow: metadata overlay mode (full / description only) | `SlideshowSettingsModal` | ✅ (already there) |
 | Revamped search dialog (same filters, new layout) | `search-bar/` | ⬜ (ours already has every filter) |
 
 ## Main navigation (web sidebar)
