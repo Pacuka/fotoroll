@@ -406,6 +406,8 @@ class _AlbumScreenState extends State<AlbumScreen> {
     final a = _album;
     final theme = Theme.of(context);
     final owner = _me != null && a.ownerId == _me;
+    // Editors may change the title and description too (Immich v3.3, web isAlbumEditor).
+    final editor = owner || a.albumUsers.any((u) => u['user']?['id'] == _me && u['role'] == 'editor');
     final fmt = DateFormat.yMMMd(i18n.dateLocale);
     final range = a.startDate == null
         ? null
@@ -458,9 +460,13 @@ class _AlbumScreenState extends State<AlbumScreen> {
                   onPressed: _delete,
                   child: Text(t('delete_album')),
                 ),
-              ] else
+              ] else ...[
+                if (editor)
+                  MenuItemButton(
+                      leadingIcon: const Icon(Icons.edit_outlined), onPressed: _edit, child: Text(t('edit_album'))),
                 MenuItemButton(
                     leadingIcon: const Icon(Icons.logout), onPressed: _leave, child: Text(t('leave_album'))),
+              ],
             ],
             builder: (context, ctl, _) => IconButton(
               tooltip: t('album_options'),
@@ -476,7 +482,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             InkWell(
-              onTap: owner ? _edit : null,
+              onTap: editor ? _edit : null,
               child: Text(a.name, style: theme.textTheme.headlineMedium),
             ),
             const SizedBox(height: 4),

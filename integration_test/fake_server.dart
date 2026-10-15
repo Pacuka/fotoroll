@@ -336,10 +336,18 @@ class FakeImmich {
       out = _album(albums.firstWhere((x) => x['id'] == match(r'/api/albums/([\w-]+)')![1]));
     } else if (match(r'/api/albums/([\w-]+)') != null && m == 'PATCH') {
       final a = albums.firstWhere((x) => x['id'] == match(r'/api/albums/([\w-]+)')![1]);
-      if (body['albumName'] != null) a['albumName'] = body['albumName'];
-      if (body['description'] != null) a['description'] = body['description'];
-      if (body['order'] != null) a['order'] = body['order'];
-      out = _album(a);
+      // Server: AlbumUpdate = owner or a shared user with the editor role.
+      final canEdit = a['ownerId'] == me['id'] ||
+          [...?a['albumUsers'] as List?].any((u) => u['user']['id'] == me['id'] && u['role'] == 'editor');
+      if (!canEdit) {
+        status = 403;
+        out = {'message': 'Not found or no album.update access'};
+      } else {
+        if (body['albumName'] != null) a['albumName'] = body['albumName'];
+        if (body['description'] != null) a['description'] = body['description'];
+        if (body['order'] != null) a['order'] = body['order'];
+        out = _album(a);
+      }
     } else if (path == '/api/memories' || path == '/api/memories/statistics') {
       // `for` = today's lane; otherwise the memories page with its filters (v3.2+).
       final now = DateTime.now();
@@ -496,7 +504,8 @@ class FakeImmich {
 
   Map<String, dynamic> _album(Map<String, dynamic> a) => {
         'id': a['id'], 'albumName': a['albumName'], 'description': a['description'], 'ownerId': a['ownerId'],
-        'assetCount': (a['assetIds'] as List).length, 'shared': false, 'albumUsers': [], 'order': a['order'],
+        'assetCount': (a['assetIds'] as List).length, 'shared': (a['albumUsers'] as List?)?.isNotEmpty ?? false,
+        'albumUsers': a['albumUsers'] ?? [], 'order': a['order'],
         'isActivityEnabled': false, 'albumThumbnailAssetId': (a['assetIds'] as List).isEmpty ? null : a['assetIds'][0],
         'createdAt': '2026-10-09T00:00:00.000Z', 'updatedAt': '2026-10-09T00:00:00.000Z',
         'startDate': '2026-10-09T00:00:00.000Z', 'endDate': '2026-10-09T00:00:00.000Z', 'hasSharedLink': false,

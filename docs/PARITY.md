@@ -13,7 +13,7 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | Shared people: manage access per person and in bulk, "shared with me" indicator, filter people by shared by / with | `PersonEditAccessModal`, `PersonBulkShareModal`, `PeopleFilterModal`, `PersonIndicator` | ✅ (also "aka" names) |
 | Person edit: name + birth date in one dialog, "only change for me" for shared people; Features → people update strategy | `PersonEditModal`, `FeatureSettings.svelte` | ✅ |
 | Memories page (current / upcoming, favorite memories, filters) and birthday memories | `/memories`, `MemoryCard`, `MemoriesSettingsModal` | ✅ (sidebar entry, Explore section; no confetti) |
-| Album editors can change title & description | `album.service.ts` | ⬜ |
+| Album editors can change title & description | `album.service.ts` | ✅ |
 | API key rotate | `api-key.service.ts` | ⬜ |
 | Tag renaming | `TagEditModal` | ⬜ |
 | Map: show assets in the current viewport | `map/` | ⬜ |
