@@ -417,8 +417,10 @@ class _AlbumScreenState extends State<AlbumScreen> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          IconButton(
-              tooltip: t('add_photos'), icon: const Icon(Icons.add_photo_alternate_outlined), onPressed: _addPhotos),
+          // The server lets only the owner and editors add photos.
+          if (editor)
+            IconButton(
+                tooltip: t('add_photos'), icon: const Icon(Icons.add_photo_alternate_outlined), onPressed: _addPhotos),
           IconButton(
             tooltip: t('slideshow'),
             icon: const Icon(Icons.slideshow_outlined),
@@ -514,7 +516,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
           child: Loader<TimelineSource>(
             future: _source,
             onRetry: _reloadAll,
-            builder: (src) => src.length == 0
+            builder: (src) => src.length == 0 && editor
                 ? Center(
                     child: FilledButton.icon(
                       onPressed: _addPhotos,

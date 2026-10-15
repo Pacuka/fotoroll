@@ -105,6 +105,7 @@ void main() {
     await waitFor(find.text('Edit album'));
     expect(find.text('Leave album'), findsOneWidget);
     expect(find.text('Delete album'), findsNothing);
+    expect(find.byTooltip('Add photos'), findsOneWidget);
     expect(find.text('Display order'), findsNothing);
     await shot('album_editor_menu');
     await tap(find.text('Edit album'));
@@ -133,6 +134,7 @@ void main() {
     await tap(find.byTooltip('Album options'));
     await waitFor(find.text('Leave album'));
     expect(find.text('Edit album'), findsNothing);
+    expect(find.byTooltip('Add photos'), findsNothing, reason: "viewers can't add photos");
     await shot('album_viewer_menu');
     await tap(find.byTooltip('Album options'));
     await gone(find.text('Leave album'));
