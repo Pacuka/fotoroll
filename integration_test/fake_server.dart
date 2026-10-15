@@ -129,8 +129,8 @@ class FakeImmich {
   final apiKeys = <Map<String, dynamic>>[];
   /// Reject requests whose x-api-key isn't a secret in [apiKeys] (off: any key works).
   bool enforceApiKeys = false;
-  /// Behave like Immich v3.1: no POST /api-keys/:id/rotate.
-  bool noRotate = false;
+  /// Behave like Immich v3.1: no POST /api-keys/:id/rotate, tag updates ignore `name`.
+  bool v31 = false;
 
   int get port => _server.port;
   String get url => 'http://127.0.0.1:$port';
@@ -223,7 +223,7 @@ class FakeImmich {
     } else if (path == '/api/api-keys/me' && m == 'GET') {
       final k = myKey();
       (status, out) = k == null ? (400, {'message': 'Not an API key'}) : (200, keyJson(k));
-    } else if (match(r'/api/api-keys/([\w-]+)/rotate') case final r? when m == 'POST' && !noRotate) {
+    } else if (match(r'/api/api-keys/([\w-]+)/rotate') case final r? when m == 'POST' && !v31) {
       final k = apiKeys.firstWhere((k) => k['id'] == r[1]);
       k['secret'] = 'secret-${DateTime.now().microsecondsSinceEpoch}';
       out = {...keyJson(k), 'secret': k['secret'], 'apiKey': keyJson(k)};
@@ -326,6 +326,20 @@ class FakeImmich {
             return t;
           }),
       ];
+    } else if (match(r'/api/tags/([\w-]+)') case final r? when m == 'PUT' && r[1] != 'assets') {
+      final tag = tags.firstWhere((t) => t['id'] == r[1]);
+      if (body.containsKey('color')) tag['color'] = body['color'];
+      if (body['name'] != null && !v31) {
+        // Renames the last part; children follow (tag.repository update).
+        final old = tag['value'] as String;
+        final value = [...old.split('/')..removeLast(), body['name']].join('/');
+        for (final t in tags) {
+          final v = t['value'] as String;
+          if (v == old || v.startsWith('$old/')) t['value'] = value + v.substring(old.length);
+        }
+        tag['name'] = body['name'];
+      }
+      out = tag;
     } else if (path == '/api/tags/assets' && m == 'PUT') {
       for (final aid in body['assetIds']) {
         for (final tid in body['tagIds']) {

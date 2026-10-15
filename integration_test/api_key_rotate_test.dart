@@ -128,7 +128,7 @@ void main() {
     expect(find.textContaining('Error'), findsNothing);
 
     // 3. Immich v3.1: no rotate endpoint → a clear message, nothing changes.
-    server.noRotate = true;
+    server.v31 = true;
     final before = key('cli')['secret'];
     await rotate('cli');
     await waitFor(find.text('Rotating API keys needs Immich v3.2 or newer'));

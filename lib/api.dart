@@ -686,6 +686,10 @@ class ImmichApi {
   Future<void> untagAssets(String tagId, List<String> assetIds) =>
       _sendJson('DELETE', '/tags/$tagId/assets', {'ids': assetIds});
   Future<void> deleteTag(String id) => _sendJson('DELETE', '/tags/$id');
+  /// [name] replaces the last part of the path (Immich v3.3+; older servers ignore it).
+  /// [color] is "#rrggbb", or "" to remove it.
+  Future<Map<String, dynamic>> updateTag(String id, {String? name, String? color}) async =>
+      await _sendJson('PUT', '/tags/$id', {'name': ?name, if (color != null) 'color': color.isEmpty ? null : color});
 
   // ---- Stacks ----
 

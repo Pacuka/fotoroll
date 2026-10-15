@@ -16,7 +16,10 @@ class _PathTree extends StatefulWidget {
   final String? selected;
   final ValueChanged<String> onSelect;
   final IconData icon;
-  const _PathTree({required this.paths, required this.selected, required this.onSelect, required this.icon});
+  /// Icon colour per path (tag colours).
+  final Map<String, Color> colors;
+  const _PathTree(
+      {required this.paths, required this.selected, required this.onSelect, required this.icon, this.colors = const {}});
 
   @override
   State<_PathTree> createState() => _PathTreeState();
@@ -24,6 +27,19 @@ class _PathTree extends StatefulWidget {
 
 class _PathTreeState extends State<_PathTree> {
   final _open = <String>{};
+
+  @override
+  void didUpdateWidget(_PathTree old) {
+    super.didUpdateWidget(old);
+    // Keep a renamed selection visible: open it and its parents under the new path.
+    final sel = widget.selected;
+    if (sel != null && sel != old.selected) {
+      final parts = sel.split('/');
+      for (var i = 1; i <= parts.length; i++) {
+        _open.add(parts.take(i).join('/'));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +73,7 @@ class _PathTreeState extends State<_PathTree> {
                 )
               : const SizedBox(width: 40),
           title: Row(children: [
-            Icon(widget.icon, size: 18),
+            Icon(widget.icon, size: 18, color: widget.colors[k]),
             const SizedBox(width: 6),
             Flexible(child: Text(k.split('/').last, overflow: TextOverflow.ellipsis)),
           ]),
@@ -75,6 +91,111 @@ class _PathTreeState extends State<_PathTree> {
   }
 }
 
+/// "#rgb" / "#rrggbb" (Immich tag colours) → Color.
+Color? _hexColor(Object? hex) {
+  var h = (hex as String? ?? '').replaceFirst('#', '');
+  if (h.length == 3) h = h.split('').map((c) => '$c$c').join();
+  final v = h.length == 6 ? int.tryParse(h, radix: 16) : null;
+  return v == null ? null : Color(0xFF000000 | v);
+}
+
+/// Web: TagEditModal — colour and name (the last part of the path). Returns (name, "#rrggbb" or "").
+class _TagEditDialog extends StatefulWidget {
+  final String name;
+  final String color;
+  final String parent;
+  const _TagEditDialog({required this.name, required this.color, required this.parent});
+
+  @override
+  State<_TagEditDialog> createState() => _TagEditDialogState();
+}
+
+class _TagEditDialogState extends State<_TagEditDialog> {
+  static const _palette = [
+    '#e53935', '#fb8c00', '#fdd835', '#43a047', '#00897b', '#1e88e5', '#3949ab', '#8e24aa', '#d81b60', '#6d4c41',
+    '#757575',
+  ];
+  late final _name = TextEditingController(text: widget.name);
+  late final _hex = TextEditingController(text: widget.color);
+
+  String? get _nameError => _name.text.contains('/') ? t('linux_tag_name_no_slash') : null;
+  bool get _hexOk => _hex.text.isEmpty || _hexColor(_hex.text) != null;
+  bool get _valid => _name.text.trim().isNotEmpty && _nameError == null && _hexOk;
+
+  void _save() {
+    if (!_valid) return;
+    var hex = _hex.text.trim().toLowerCase();
+    if (hex.isNotEmpty && !hex.startsWith('#')) hex = '#$hex';
+    Navigator.pop(context, (_name.text.trim(), hex));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final current = _hexColor(_hex.text);
+    Widget swatch(String? hex) {
+      final c = _hexColor(hex);
+      final on = hex == null ? _hex.text.isEmpty : current == c;
+      return Tooltip(
+        message: hex ?? t('linux_no_color'),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () => setState(() => _hex.text = hex ?? ''),
+          child: Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: c,
+              shape: BoxShape.circle,
+              border: Border.all(
+                  color: on ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor, width: on ? 3 : 1),
+            ),
+            child: hex == null ? const Icon(Icons.block, size: 16) : null,
+          ),
+        ),
+      );
+    }
+
+    return AlertDialog(
+      title: Text(t('edit_tag')),
+      content: SizedBox(
+        width: 400,
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(t('color'), style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [swatch(null), for (final h in _palette) swatch(h)]),
+          TextField(
+            controller: _hex,
+            decoration: InputDecoration(
+              labelText: 'Hex',
+              hintText: '#rrggbb',
+              errorText: _hexOk ? null : '#rrggbb',
+              prefixIcon: Icon(Icons.circle, color: current ?? Colors.transparent),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _name,
+            autofocus: true,
+            decoration: InputDecoration(labelText: t('name'), errorText: _nameError),
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => _save(),
+          ),
+          if (widget.parent.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('${t('tag_full_path', {'tag': widget.parent})}${_name.text.trim()}',
+                style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ]),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(t('cancel'))),
+        FilledButton(onPressed: _valid ? _save : null, child: Text(t('save'))),
+      ],
+    );
+  }
+}
+
 class TagsScreen extends StatefulWidget {
   final ImmichApi api;
   const TagsScreen({super.key, required this.api});
@@ -89,6 +210,36 @@ class _TagsScreenState extends State<TagsScreen> {
   Future<TimelineSource>? _source;
 
   void _reload() => setState(() { _tags = widget.api.tags(); });
+
+  Future<void> _edit() async {
+    final tag = _selected;
+    if (tag == null) return;
+    final value = tag['value'] as String;
+    final parent = value.contains('/') ? value.substring(0, value.lastIndexOf('/') + 1) : '';
+    final result = await showDialog<(String, String)>(
+      context: context,
+      builder: (_) => _TagEditDialog(name: value.split('/').last, color: tag['color'] ?? '', parent: parent),
+    );
+    if (result == null) return;
+    final (name, color) = result;
+    try {
+      final renamed = name != value.split('/').last;
+      final updated =
+          await widget.api.updateTag(tag['id'], name: renamed ? name : null, color: color == (tag['color'] ?? '') ? null : color);
+      if (!mounted) return;
+      // Servers before v3.3 drop the name silently.
+      final msg = renamed && updated['value'] == value
+          ? t('linux_tag_rename_unsupported')
+          : t('tag_updated', {'tag': updated['value']});
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      setState(() {
+        _selected = updated;
+        _tags = widget.api.tags();
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${t('error')}: $e')));
+    }
+  }
 
   void _select(List<Map<String, dynamic>> tags, String value) {
     final tag = tags.firstWhere((t) => t['value'] == value, orElse: () => {});
@@ -173,8 +324,10 @@ class _TagsScreenState extends State<TagsScreen> {
                   child: FilledButton.tonalIcon(
                       onPressed: _create, icon: const Icon(Icons.add), label: Text(t('create_tag'))),
                 ),
-                if (_selected != null)
+                if (_selected != null) ...[
+                  IconButton(tooltip: t('edit_tag'), icon: const Icon(Icons.edit_outlined), onPressed: _edit),
                   IconButton(tooltip: t('delete_tag'), icon: const Icon(Icons.delete_outline), onPressed: _delete),
+                ],
               ]),
             ),
             Expanded(
@@ -182,6 +335,7 @@ class _TagsScreenState extends State<TagsScreen> {
                 paths: [for (final t in tags) t['value'] as String],
                 selected: _selected?['value'],
                 icon: Icons.sell_outlined,
+                colors: {for (final t in tags) t['value'] as String: ?_hexColor(t['color'])},
                 onSelect: (v) => _select(tags, v),
               ),
             ),

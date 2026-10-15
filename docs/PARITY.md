@@ -15,7 +15,7 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | Memories page (current / upcoming, favorite memories, filters) and birthday memories | `/memories`, `MemoryCard`, `MemoriesSettingsModal` | ✅ (sidebar entry, Explore section; no confetti) |
 | Album editors can change title & description | `album.service.ts` | ✅ |
 | API key rotate | `api-key.service.ts` | ✅ (rotating the key Fotoroll signs in with switches it to the new one) |
-| Tag renaming | `TagEditModal` | ⬜ |
+| Tag renaming | `TagEditModal` | ✅ (with the tag colour, shown in the tag tree) |
 | Map: show assets in the current viewport | `map/` | ⬜ |
 | Slideshow: metadata overlay mode (full / description only) | `SlideshowSettingsModal` | ✅ (already there) |
 | Revamped search dialog (same filters, new layout) | `search-bar/` | ⬜ (ours already has every filter) |
@@ -34,7 +34,7 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | Locked folder (PIN) | `/locked` | ✅ |
 | Trash: restore / empty | `/trash` | ✅ |
 | Folders view (path tree + folder timeline) | `/folders` | ✅ |
-| Tags (tree, tag timeline, delete) | `/tags` | ✅ |
+| Tags (tree, tag timeline, create, edit name & colour, delete) | `/tags` | ✅ |
 | Memories ("x years ago" lane + viewer: autoplay, pause, prev/next, mark seen) | `/memory` | ✅ |
 | Shared links management (list, edit, copy, delete) | `/shared-links` | ✅ |
 | People: all, show & hide, rename, birth date, favorite, merge | `/people`, `/people/manage` | ✅ |
