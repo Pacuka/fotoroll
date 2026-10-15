@@ -15,6 +15,7 @@ import 'package:fotoroll/i18n.dart';
 import 'package:fotoroll/screens/explore.dart' show PersonAvatar;
 import 'package:fotoroll/screens/home.dart';
 import 'package:fotoroll/screens/viewer.dart';
+import 'package:fotoroll/settings.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:media_kit/media_kit.dart';
 
@@ -28,6 +29,8 @@ void main() {
     MediaKit.ensureInitialized();
     await i18n.load('en');
     BackupService.overrideRoot = Directory.systemTemp.createTempSync('immich_it').path;
+    // Searches go to the search history in the settings: never the user's real ones.
+    settings.useDir(Directory.systemTemp.createTempSync('immich_it_settings').path);
     final server = FakeImmich();
     await server.start();
     final api = ImmichApi(Credentials(serverUrl: server.url, apiKey: 'k'));
@@ -197,19 +200,27 @@ void main() {
     noErrors('smart search');
 
     await tester.tap(find.byTooltip('Search options').first);
-    await waitFor(find.text('Search options'));
+    await waitFor(find.text('Filter by'));
     await wait(const Duration(milliseconds: 800));
-    final dialog = find.byType(AlertDialog);
-    await tester.tap(find.descendant(of: dialog, matching: find.byType(PersonAvatar)).first);
-    await tester.pump();
+    final dialog = find.byType(Dialog);
+    // The last search is in the history.
+    expect(find.descendant(of: dialog, matching: find.widgetWithText(ListTile, 'beach')), findsOneWidget);
     await tester.tap(find.descendant(of: dialog, matching: find.text('Context')));
     await tester.pump();
-    await tester.enterText(find.descendant(of: dialog, matching: find.byType(TextField)).at(1), '');
+    await tester.enterText(find.descendant(of: dialog, matching: find.byType(TextField)).first, '');
+    await tester.pump();
+    await tester.tap(find.descendant(of: dialog, matching: find.text('People')));
+    await wait(const Duration(milliseconds: 300));
+    await tester.tap(find.descendant(of: dialog, matching: find.byType(PersonAvatar)).first);
+    await tester.pump();
+    await tester.tap(find.descendant(of: dialog, matching: find.text('Places')));
+    await wait(const Duration(milliseconds: 300));
     await tester.tap(find.descendant(of: dialog, matching: find.widgetWithText(DropdownMenu<String?>, 'Country')));
     await wait(const Duration(milliseconds: 500));
     await tester.tap(find.text('Hungary').last);
     await wait(const Duration(milliseconds: 500));
-    await tester.ensureVisible(find.descendant(of: dialog, matching: find.text('Video')));
+    await tester.tap(find.descendant(of: dialog, matching: find.text('Media')));
+    await wait(const Duration(milliseconds: 300));
     await tester.tap(find.descendant(of: dialog, matching: find.text('Video')));
     await tester.pump();
     final before = server.searches.length;

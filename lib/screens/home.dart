@@ -185,6 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _search() {
     final f = _filter.copy()..query = _searchCtl.text.trim();
     if (f.isEmpty) return;
+    settings.addSearch(f.query);
     setState(() {
       _filter = f;
       _page = _Page.search;
@@ -195,6 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final f = await showSearchFilterDialog(context, widget.api, _filter.copy()..query = _searchCtl.text);
     if (f == null || !mounted) return;
     _searchCtl.text = f.query;
+    settings.addSearch(f.query);
     setState(() {
       _filter = f;
       if (!f.isEmpty) _page = _Page.search;

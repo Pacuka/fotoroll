@@ -63,6 +63,8 @@ class AppSettings extends ChangeNotifier {
   /// Memories page filters (web: MemoriesSettingsModal, kept in localStorage there).
   bool memoriesShowUpcoming = false;
   bool memoriesOnlyFavorites = false;
+  /// Recent search terms, newest first (web: savedSearchTerms, at most 5).
+  List<String> searchHistory = [];
 
   AppSettings({String? configDir})
       : _dir = configDir ?? appConfigDir();
@@ -84,6 +86,7 @@ class AppSettings extends ChangeNotifier {
       menuEntryAsked = j['menuEntryAsked'] as bool? ?? false;
       memoriesShowUpcoming = j['memoriesShowUpcoming'] as bool? ?? false;
       memoriesOnlyFavorites = j['memoriesOnlyFavorites'] as bool? ?? false;
+      searchHistory = [...?(j['searchHistory'] as List?)?.whereType<String>()];
     } catch (_) {}
   }
 
@@ -97,7 +100,9 @@ class AppSettings extends ChangeNotifier {
     bool? menuEntryAsked,
     bool? memoriesShowUpcoming,
     bool? memoriesOnlyFavorites,
+    List<String>? searchHistory,
   }) async {
+    if (searchHistory != null) this.searchHistory = searchHistory;
     if (memoriesShowUpcoming != null) this.memoriesShowUpcoming = memoriesShowUpcoming;
     if (memoriesOnlyFavorites != null) this.memoriesOnlyFavorites = memoriesOnlyFavorites;
     if (menuEntryAsked != null) this.menuEntryAsked = menuEntryAsked;
@@ -120,9 +125,18 @@ class AppSettings extends ChangeNotifier {
         'menuEntryAsked': this.menuEntryAsked,
         'memoriesShowUpcoming': this.memoriesShowUpcoming,
         'memoriesOnlyFavorites': this.memoriesOnlyFavorites,
+        'searchHistory': this.searchHistory,
       }));
     } catch (_) {}
   }
+
+  /// Puts [term] first in the search history (web: SearchBar saveSearchTerm).
+  Future<void> addSearch(String term) async {
+    term = term.trim();
+    if (term.isEmpty || (searchHistory.isNotEmpty && searchHistory.first == term)) return;
+    await update(searchHistory: [term, ...searchHistory.where((x) => x != term)].take(5).toList());
+  }
 }
+
 
 final settings = AppSettings();

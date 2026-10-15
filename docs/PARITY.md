@@ -18,7 +18,7 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | Tag renaming | `TagEditModal` | ✅ (with the tag colour, shown in the tag tree) |
 | Map: show assets in the current viewport | `map/` | ✅ (our panel already followed the viewport; added the toggle and "Show asset panel by default") |
 | Slideshow: metadata overlay mode (full / description only) | `SlideshowSettingsModal` | ✅ (already there) |
-| Revamped search dialog (same filters, new layout) | `search-bar/` | ⬜ (ours already has every filter) |
+| Revamped search dialog (same filters, new layout) | `search-bar/` | ✅ (recent searches, filter buttons with values, date presets, advanced filters) |
 
 ## Main navigation (web sidebar)
 | Feature | Web route | Status |
@@ -41,7 +41,7 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | Places (all, by country) | `/places` | ✅ |
 | Recently added | `/recently-added` | ✅ |
 | Partner timeline | `/partners/[id]` | ✅ |
-| Search with filters (people, text modes incl. OCR & path, tags, place, camera, date, rating, type, display options) | `/search` | ✅ (no search history yet) |
+| Search with filters (people, text modes incl. OCR & path, tags, place, camera, date, rating, type, display options) | `/search` | ✅ (with recent searches) |
 | Workflows | `/workflows` | ⬜ |
 
 ## Asset viewer
