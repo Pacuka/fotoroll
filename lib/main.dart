@@ -62,14 +62,16 @@ class _FotorollAppState extends State<FotorollApp> {
     setState(() {
       _loading = false;
       _lastServer = creds?.serverUrl;
-      if (creds != null) _api = ImmichApi(creds);
+      if (creds != null) _api = _newApi(creds);
     });
   }
+
+  ImmichApi _newApi(Credentials creds) => ImmichApi(creds)..onCredentialsChanged = _store.save;
 
   Future<void> _onLoggedIn(Credentials creds) async {
     await _store.save(creds);
     setState(() {
-      _api = ImmichApi(creds);
+      _api = _newApi(creds);
       _lastServer = creds.serverUrl;
     });
   }

@@ -125,6 +125,12 @@ class FakeImmich {
      'assets': [assets[1], assets[3]]},
   ];
   final albums = <Map<String, dynamic>>[];
+  /// API keys; `secret` is what a client sends in x-api-key.
+  final apiKeys = <Map<String, dynamic>>[];
+  /// Reject requests whose x-api-key isn't a secret in [apiKeys] (off: any key works).
+  bool enforceApiKeys = false;
+  /// Behave like Immich v3.1: no POST /api-keys/:id/rotate.
+  bool noRotate = false;
 
   int get port => _server.port;
   String get url => 'http://127.0.0.1:$port';
@@ -164,6 +170,16 @@ class FakeImmich {
 
     RegExpMatch? match(String pattern) => RegExp('^$pattern\$').firstMatch(path);
 
+    final apiKey = req.headers.value('x-api-key');
+    Map<String, dynamic>? myKey() => apiKeys.where((k) => k['secret'] == apiKey).firstOrNull;
+    Map<String, dynamic> keyJson(Map<String, dynamic> k) => {...k}..remove('secret');
+    if (enforceApiKeys && myKey() == null) {
+      res.statusCode = 401;
+      res.headers.contentType = ContentType.json;
+      res.write(jsonEncode({'message': 'Invalid API key'}));
+      return res.close();
+    }
+
     final pano = panoramas[RegExp(r'/api/assets/([\w-]+)/').firstMatch(path)?[1]];
     if (pano != null && panoramaVideos.contains(RegExp(r'/api/assets/([\w-]+)/').firstMatch(path)?[1]) &&
         path.endsWith('/video/playback')) {
@@ -202,7 +218,16 @@ class FakeImmich {
       return res.close();
     }
 
-    if (path == '/api/users/me' && m == 'GET') {
+    if (path == '/api/api-keys' && m == 'GET') {
+      out = apiKeys.map(keyJson).toList();
+    } else if (path == '/api/api-keys/me' && m == 'GET') {
+      final k = myKey();
+      (status, out) = k == null ? (400, {'message': 'Not an API key'}) : (200, keyJson(k));
+    } else if (match(r'/api/api-keys/([\w-]+)/rotate') case final r? when m == 'POST' && !noRotate) {
+      final k = apiKeys.firstWhere((k) => k['id'] == r[1]);
+      k['secret'] = 'secret-${DateTime.now().microsecondsSinceEpoch}';
+      out = {...keyJson(k), 'secret': k['secret'], 'apiKey': keyJson(k)};
+    } else if (path == '/api/users/me' && m == 'GET') {
       out = {...me, 'clusterGroupId': clusterGroupOf[me['id']]};
     } else if (path == '/api/users' && m == 'GET') {
       out = [me, ...otherUsers];
@@ -475,7 +500,7 @@ class FakeImmich {
       out = ['/photos/2026/october', '/photos/2025'];
     } else if (path == '/api/view/folder') {
       out = assets.take(4).toList();
-    } else if (path == '/api/partners' || path == '/api/sessions' || path == '/api/api-keys' ||
+    } else if (path == '/api/partners' || path == '/api/sessions' ||
         path == '/api/libraries' || path == '/api/duplicates' || path == '/api/shared-links') {
       out = [];
     } else if (path == '/api/auth/status') {

@@ -117,6 +117,8 @@
   "linux_pin_digits": "6 számjegy",
   "linux_removed_from_album_count": "{count, plural, other {# elem}} eltávolítva az albumból",
   "linux_retry": "Újra",
+  "linux_rotate_key_unsupported": "Az API kulcs újragenerálásához Immich v3.2 vagy újabb kell",
+  "linux_rotated_own_key": "A Fotoroll ezzel a kulccsal jelentkezik be, mostantól az újat használja",
   "linux_saved_to": "Mentve: {files}",
   "linux_scan_interval": "Ellenőrzés gyakorisága",
   "linux_scan_interval_sub": "Az új fájlokat a mappafigyelés is észreveszi; ez a biztonsági újraellenőrzés.",

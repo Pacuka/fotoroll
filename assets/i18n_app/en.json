@@ -117,6 +117,8 @@
   "linux_pin_digits": "6 digits",
   "linux_removed_from_album_count": "Removed {count, plural, one {# item} other {# items}} from the album",
   "linux_retry": "Retry",
+  "linux_rotate_key_unsupported": "Rotating API keys needs Immich v3.2 or newer",
+  "linux_rotated_own_key": "Fotoroll signs in with this key, it now uses the new one",
   "linux_saved_to": "Saved: {files}",
   "linux_scan_interval": "Check interval",
   "linux_scan_interval_sub": "New files are also picked up by folder watching; this is the safety re-check.",

@@ -615,8 +615,11 @@ class _ApiKeysSectionState extends State<_ApiKeysSection> {
     await _guard(context, () async {
       final secret = await widget.api.createApiKey(name.text.trim());
       _reload();
-      if (!mounted) return;
-      await showDialog<void>(
+      if (mounted) await _showSecret(secret);
+    });
+  }
+
+  Future<void> _showSecret(String secret) => showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(t('api_key')),
@@ -637,8 +640,34 @@ class _ApiKeysSectionState extends State<_ApiKeysSection> {
           ],
         ),
       );
-    });
-  }
+
+  /// Web: handleRotateApiKey (Immich v3.2+).
+  Future<void> _rotate(Map<String, dynamic> key) => _guard(context, () async {
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            content: Text(t('rotate_api_key_prompt')),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('cancel'))),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('rotate_key'))),
+            ],
+          ),
+        );
+        if (ok != true) return;
+        final String secret;
+        final bool own;
+        try {
+          (secret, own) = await widget.api.rotateApiKey(key['id']);
+        } on ApiException catch (e) {
+          if (e.status != 404) rethrow;
+          if (mounted) _toast(context, t('linux_rotate_key_unsupported'));
+          return;
+        }
+        _reload();
+        if (!mounted) return;
+        if (own) _toast(context, t('linux_rotated_own_key'));
+        await _showSecret(secret);
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -655,26 +684,29 @@ class _ApiKeysSectionState extends State<_ApiKeysSection> {
               leading: const Icon(Icons.key),
               title: Text(k['name'] ?? ''),
               subtitle: Text('${t('created')}: ${_date(k['createdAt'])}'),
-              trailing: IconButton(
-                tooltip: t('delete'),
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () => _guard(context, () async {
-                  final ok = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      content: Text(t('delete_api_key_prompt')),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('cancel'))),
-                        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('delete'))),
-                      ],
-                    ),
-                  );
-                  if (ok == true) {
-                    await widget.api.deleteApiKey(k['id']);
-                    _reload();
-                  }
-                }),
-              ),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                IconButton(tooltip: t('rotate_key'), icon: const Icon(Icons.autorenew), onPressed: () => _rotate(k)),
+                IconButton(
+                  tooltip: t('delete'),
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => _guard(context, () async {
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        content: Text(t('delete_api_key_prompt')),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('cancel'))),
+                          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('delete'))),
+                        ],
+                      ),
+                    );
+                    if (ok == true) {
+                      await widget.api.deleteApiKey(k['id']);
+                      _reload();
+                    }
+                  }),
+                ),
+              ]),
             ),
           Align(
             alignment: Alignment.centerRight,

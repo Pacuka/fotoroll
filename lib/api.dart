@@ -433,7 +433,10 @@ class SearchPage {
 }
 
 class ImmichApi {
-  final Credentials creds;
+  /// Changes only when the API key the app signs in with is rotated.
+  Credentials creds;
+  /// Persists [creds] after such a change (set by the app; tests leave it null).
+  void Function(Credentials creds)? onCredentialsChanged;
   final http.Client _client = _newClient();
 
   // Without limits a dead connection (after suspend, a Wi-Fi switch) waits forever,
@@ -857,6 +860,18 @@ class ImmichApi {
       (await _sendJson('POST', '/api-keys', {'name': name, 'permissions': ['all']}))['secret'];
 
   Future<void> deleteApiKey(String id) => _sendJson('DELETE', '/api-keys/$id');
+
+  /// New secret for a key (Immich v3.2+); the old one stops working at once. Rotating the key
+  /// this app signs in with switches the app to the new secret. Returns (secret, wasOwnKey).
+  Future<(String, bool)> rotateApiKey(String id) async {
+    final own = creds.apiKey != null && (await _getJson('/api-keys/me'))['id'] == id;
+    final secret = (await _postJson('/api-keys/$id/rotate', {}))['secret'] as String;
+    if (own) {
+      creds = Credentials(serverUrl: creds.serverUrl, apiKey: secret);
+      onCredentialsChanged?.call(creds);
+    }
+    return (secret, own);
+  }
 
   Future<List<Map<String, dynamic>>> sessions() async =>
       (await _getJson('/sessions') as List).cast<Map<String, dynamic>>();
