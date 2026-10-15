@@ -53,6 +53,8 @@ class AppSettings extends ChangeNotifier {
   String language = 'en';
   ThemeMode themeMode = ThemeMode.system;
   String mapStyle = 'auto';
+  /// Map: open the "photos in this area" panel by default (web: showAssetPanel).
+  bool mapShowPanel = true;
   SlideshowPrefs slideshow = SlideshowPrefs();
   /// Closing the window keeps the app (and folder backup) running in the tray.
   bool closeToTray = true;
@@ -76,6 +78,7 @@ class AppSettings extends ChangeNotifier {
       language = j['language'] as String? ?? 'en';
       themeMode = ThemeMode.values.asNameMap()[j['theme']] ?? ThemeMode.system;
       mapStyle = j['mapStyle'] as String? ?? 'auto';
+      mapShowPanel = j['mapShowPanel'] as bool? ?? true;
       slideshow = SlideshowPrefs.fromJson((j['slideshow'] as Map?)?.cast<String, dynamic>() ?? {});
       closeToTray = j['closeToTray'] as bool? ?? true;
       menuEntryAsked = j['menuEntryAsked'] as bool? ?? false;
@@ -88,6 +91,7 @@ class AppSettings extends ChangeNotifier {
     String? language,
     ThemeMode? themeMode,
     String? mapStyle,
+    bool? mapShowPanel,
     SlideshowPrefs? slideshow,
     bool? closeToTray,
     bool? menuEntryAsked,
@@ -102,6 +106,7 @@ class AppSettings extends ChangeNotifier {
     if (language != null) this.language = language;
     if (themeMode != null) this.themeMode = themeMode;
     if (mapStyle != null) this.mapStyle = mapStyle;
+    if (mapShowPanel != null) this.mapShowPanel = mapShowPanel;
     notifyListeners();
     try {
       await _file.parent.create(recursive: true);
@@ -109,6 +114,7 @@ class AppSettings extends ChangeNotifier {
         'language': this.language,
         'theme': this.themeMode.name,
         'mapStyle': this.mapStyle,
+        'mapShowPanel': this.mapShowPanel,
         'slideshow': this.slideshow.toJson(),
         'closeToTray': this.closeToTray,
         'menuEntryAsked': this.menuEntryAsked,

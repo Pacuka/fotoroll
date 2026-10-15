@@ -16,7 +16,7 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | Album editors can change title & description | `album.service.ts` | ✅ |
 | API key rotate | `api-key.service.ts` | ✅ (rotating the key Fotoroll signs in with switches it to the new one) |
 | Tag renaming | `TagEditModal` | ✅ (with the tag colour, shown in the tag tree) |
-| Map: show assets in the current viewport | `map/` | ⬜ |
+| Map: show assets in the current viewport | `map/` | ✅ (our panel already followed the viewport; added the toggle and "Show asset panel by default") |
 | Slideshow: metadata overlay mode (full / description only) | `SlideshowSettingsModal` | ✅ (already there) |
 | Revamped search dialog (same filters, new layout) | `search-bar/` | ⬜ (ours already has every filter) |
 

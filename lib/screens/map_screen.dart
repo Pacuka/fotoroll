@@ -1,5 +1,6 @@
 // Map like the mobile app: OpenStreetMap tiles with a glowing dot per photo,
-// and a panel below listing only the photos inside the visible area.
+// and a panel below listing only the photos inside the visible area (web v3.3:
+// "Show photos in this area", which can be toggled and opened by default).
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -75,6 +76,7 @@ class _MapScreenState extends State<MapScreen> {
   Timer? _debounce;
   int _request = 0;
   double _panelFraction = 0.42;
+  bool _panel = settings.mapShowPanel;
 
   bool _favoritesOnly = false;
   bool _includeArchived = false;
@@ -133,7 +135,20 @@ class _MapScreenState extends State<MapScreen> {
     _debounce = Timer(const Duration(milliseconds: 500), _reloadPanel);
   }
 
+  void _togglePanel() {
+    setState(() => _panel = !_panel);
+    if (_panel) {
+      _reloadPanel();
+    } else {
+      _request++; // drop a load in flight
+      final old = _source;
+      setState(() => _source = null);
+      WidgetsBinding.instance.addPostFrameCallback((_) => old?.dispose());
+    }
+  }
+
   Future<void> _reloadPanel() async {
+    if (!_panel) return;
     final MapCamera camera;
     try {
       camera = _map.camera;
@@ -238,6 +253,13 @@ class _MapScreenState extends State<MapScreen> {
                 const SizedBox(height: 8),
                 _MapButton(icon: Icons.fit_screen, tooltip: t('linux_fit_all'), onTap: _fitAll),
                 const SizedBox(height: 8),
+                _MapButton(
+                  icon: Icons.photo_library_outlined,
+                  tooltip: t('show_photos_in_area'),
+                  selected: _panel,
+                  onTap: _togglePanel,
+                ),
+                const SizedBox(height: 8),
                 MenuAnchor(
                   menuChildren: [
                     for (final m in mapStyles)
@@ -280,6 +302,15 @@ class _MapScreenState extends State<MapScreen> {
                       },
                       child: Text(t('linux_with_partners')),
                     ),
+                    const Divider(),
+                    CheckboxMenuButton(
+                      value: settings.mapShowPanel,
+                      onChanged: (v) {
+                        settings.update(mapShowPanel: v!);
+                        setState(() {});
+                      },
+                      child: Text(t('show_asset_panel_on_map')),
+                    ),
                   ],
                   builder: (context, ctl, _) => _MapButton(
                     icon: Icons.more_vert,
@@ -292,7 +323,7 @@ class _MapScreenState extends State<MapScreen> {
           ]),
         ),
         // Drag handle to resize the photo panel, like the phone's bottom sheet.
-        GestureDetector(
+        if (_panel) GestureDetector(
           behavior: HitTestBehavior.opaque,
           onVerticalDragUpdate: (d) => setState(() {
             _panelFraction = (_panelFraction - d.delta.dy / c.maxHeight).clamp(0.08, 0.85);
@@ -326,7 +357,7 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
         ),
-        SizedBox(
+        if (_panel) SizedBox(
           height: panelH,
           child: ColoredBox(
             color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -349,7 +380,9 @@ class _MapButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
-  const _MapButton({required this.icon, required this.tooltip, required this.onTap});
+  /// A toggle that is on.
+  final bool selected;
+  const _MapButton({required this.icon, required this.tooltip, required this.onTap, this.selected = false});
 
   @override
   Widget build(BuildContext context) {
@@ -357,8 +390,8 @@ class _MapButton extends StatelessWidget {
     return IconButton.filled(
       tooltip: tooltip,
       style: IconButton.styleFrom(
-        backgroundColor: scheme.primaryContainer,
-        foregroundColor: scheme.onPrimaryContainer,
+        backgroundColor: selected ? scheme.primary : scheme.primaryContainer,
+        foregroundColor: selected ? scheme.onPrimary : scheme.onPrimaryContainer,
       ),
       onPressed: onTap,
       icon: Icon(icon),
