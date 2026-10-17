@@ -137,6 +137,7 @@
   "linux_show_people": "Done",
   "linux_skip_hidden": "Skip hidden files and folders",
   "linux_skip_hidden_sub": "E.g. .cache, .thumbnails",
+  "linux_stack_primary": "primary",
   "linux_suggested": "Suggested",
   "linux_tag_name_no_slash": "A tag name cannot contain \"/\"",
   "linux_tag_rename_unsupported": "Renaming tags needs Immich v3.3 or newer",

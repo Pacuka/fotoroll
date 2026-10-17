@@ -534,7 +534,7 @@ class _SharingPageState extends State<_SharingPage> {
                       builder: (_) => TimelineScreen(
                         api: api,
                         title: p.name,
-                        query: TimelineQuery(userId: p.id),
+                        query: TimelineQuery(userId: p.id, withStacked: true),
                         mode: TimelineMode.readOnly,
                       ),
                     )),

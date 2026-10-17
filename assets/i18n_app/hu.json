@@ -137,6 +137,7 @@
   "linux_show_people": "Kész",
   "linux_skip_hidden": "Rejtett fájlok és mappák kihagyása",
   "linux_skip_hidden_sub": "Pl. .cache, .thumbnails",
+  "linux_stack_primary": "főkép",
   "linux_suggested": "Javasolt",
   "linux_tag_name_no_slash": "A címke neve nem tartalmazhat „/” jelet",
   "linux_tag_rename_unsupported": "A címkék átnevezéséhez Immich v3.3 vagy újabb kell",

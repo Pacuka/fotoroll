@@ -125,6 +125,28 @@ class FakeImmich {
      'assets': [assets[1], assets[3]]},
   ];
   final albums = <Map<String, dynamic>>[];
+  /// Stacks by id: {id, primaryAssetId, assetIds}.
+  final stacks = <String, Map<String, dynamic>>{};
+  /// Puts each asset's `stack` summary ({id, primaryAssetId, assetCount} or null) in place.
+  void _syncStacks() {
+    for (final a in assets) {
+      a['stack'] = null;
+    }
+    for (final st in stacks.values) {
+      for (final id in st['assetIds'] as List) {
+        asset(id)['stack'] = {
+          'id': st['id'], 'primaryAssetId': st['primaryAssetId'], 'assetCount': (st['assetIds'] as List).length,
+        };
+      }
+    }
+  }
+
+  Map<String, dynamic> _stackJson(Map<String, dynamic> st) => {
+        'id': st['id'],
+        'primaryAssetId': st['primaryAssetId'],
+        'assets': [for (final id in st['assetIds'] as List) asset(id)],
+      };
+
   /// Bodies of PUT /assets (bulk edits).
   final bulkUpdates = <Map<String, dynamic>>[];
   /// Shared links as POST /shared-links got them (plus id and key).
@@ -147,6 +169,8 @@ class FakeImmich {
         if (a['isTrashed'] == true) return false;
         if (q['isFavorite'] == 'true' && a['isFavorite'] != true) return false;
         if (q['visibility'] != null && a['visibility'] != q['visibility']) return false;
+        // withStacked: one tile per stack, its primary photo.
+        if (q['withStacked'] == 'true' && a['stack'] != null && a['stack']['primaryAssetId'] != a['id']) return false;
         if (q['albumId'] != null) {
           final al = albums.firstWhere((x) => x['id'] == q['albumId'], orElse: () => {'assetIds': []});
           if (!(al['assetIds'] as List).contains(a['id'])) return false;
@@ -290,6 +314,10 @@ class FakeImmich {
         'projectionType': [for (final a in v) (a['exifInfo'] as Map)['projectionType']],
         'livePhotoVideoId': [for (final a in v) a['livePhotoVideoId']],
         'ownerId': [for (final a in v) a['ownerId']],
+        'stack': [
+          for (final a in v)
+            a['stack'] == null ? null : [a['stack']['id'], '${a['stack']['assetCount']}'],
+        ],
       };
     } else if (match(r'/api/assets/([\w-]+)') != null && m == 'GET') {
       out = asset(match(r'/api/assets/([\w-]+)')![1]!);
@@ -378,6 +406,36 @@ class FakeImmich {
       out = q['assetId'] != null
           ? albums.where((a) => (a['assetIds'] as List).contains(q['assetId'])).map(_album).toList()
           : albums.map(_album).toList();
+    } else if (path == '/api/stacks' && m == 'POST') {
+      // Like Immich: photos already in stacks bring their whole stack along.
+      final ids = <String>[];
+      for (final id in body['assetIds'] as List) {
+        final old = asset(id)['stack'];
+        for (final x in old == null ? [id] : stacks.remove(old['id'])!['assetIds'] as List) {
+          if (!ids.contains(x)) ids.add(x as String);
+        }
+      }
+      final st = {'id': uid(1200 + _nextId++), 'primaryAssetId': ids.first, 'assetIds': ids};
+      stacks[st['id'] as String] = st;
+      _syncStacks();
+      out = _stackJson(st);
+      status = 201;
+    } else if (path == '/api/stacks' && m == 'DELETE') {
+      for (final id in body['ids']) {
+        stacks.remove(id);
+      }
+      _syncStacks();
+      status = 204;
+    } else if (match(r'/api/stacks/([\w-]+)/assets/([\w-]+)') case final r? when m == 'DELETE') {
+      (stacks[r[1]]!['assetIds'] as List).remove(r[2]);
+      _syncStacks();
+      status = 204;
+    } else if (match(r'/api/stacks/([\w-]+)') case final r? when m == 'GET') {
+      out = _stackJson(stacks[r[1]]!);
+    } else if (match(r'/api/stacks/([\w-]+)') case final r? when m == 'PUT') {
+      stacks[r[1]]!['primaryAssetId'] = body['primaryAssetId'];
+      _syncStacks();
+      out = _stackJson(stacks[r[1]]!);
     } else if (path == '/api/shared-links' && m == 'GET') {
       out = sharedLinks;
     } else if (path == '/api/shared-links' && m == 'POST') {

@@ -36,7 +36,9 @@ enum AssetAction {
   changeDate('change_date', Icons.edit_calendar_outlined),
   changeDescription('change_description', Icons.notes),
   changeLocation('change_location', Icons.edit_location_alt_outlined),
-  tag('tag', Icons.sell_outlined);
+  tag('tag', Icons.sell_outlined),
+  stack('stack', Icons.burst_mode_outlined),
+  unstack('unstack', Icons.layers_clear_outlined);
 
   final String labelKey;
   final IconData icon;
@@ -78,9 +80,16 @@ List<AssetAction> actionsFor(TimelineMode mode,
 }
 
 /// The selection bar's menu (web: the "⋮" menu, only when every photo is the user's own).
-List<AssetAction> menuActionsFor(TimelineMode mode, {required bool allOwned}) =>
+List<AssetAction> menuActionsFor(TimelineMode mode, List<AssetRef> selected, {required bool allOwned}) =>
     allOwned && (mode == TimelineMode.normal || mode == TimelineMode.archive)
-        ? const [AssetAction.changeDate, AssetAction.changeDescription, AssetAction.changeLocation, AssetAction.tag]
+        ? [
+            if (selected.length > 1) AssetAction.stack,
+            if (selected.isNotEmpty && selected.every((a) => a.stackId != null)) AssetAction.unstack,
+            AssetAction.changeDate,
+            AssetAction.changeDescription,
+            AssetAction.changeLocation,
+            AssetAction.tag,
+          ]
         : const [];
 
 class AssetSelection extends ChangeNotifier {
@@ -124,7 +133,8 @@ Future<Directory> downloadsDir() async {
   return Directory(p.join(Platform.environment['HOME'] ?? '.', 'Downloads'));
 }
 
-Future<bool> _confirm(BuildContext context, String title, String body, String ok) async {
+/// An OK / Cancel question; true when confirmed.
+Future<bool> confirmDialog(BuildContext context, String title, String body, String ok) async {
   final r = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -196,7 +206,7 @@ Future<bool> performAction(
         source.removeAssets(idSet);
         say(t('assets_restored_count', {'count': n}));
       case AssetAction.deleteForever:
-        if (!await _confirm(context, t('permanently_delete'),
+        if (!await confirmDialog(context, t('permanently_delete'),
             t('permanently_delete_assets_prompt', {'count': n}), t('delete'))) {
           return false;
         }
@@ -240,6 +250,15 @@ Future<bool> performAction(
         final tags = await api.upsertTags([name.trim()]);
         await api.tagAssets([for (final t in tags) t['id'] as String], ids);
         say(t('tagged_assets', {'count': n}));
+      case AssetAction.stack:
+        // Web: the first selected photo becomes the primary one.
+        await api.createStack(ids);
+        libraryChanged.value++; // only the primary photo stays in the timeline
+        say(t('stacked_assets_count', {'count': n}));
+      case AssetAction.unstack:
+        await api.deleteStacks({for (final a in assets) ?a.stackId}.toList());
+        libraryChanged.value++;
+        say(t('unstacked_assets_count', {'count': assets.fold<int>(0, (s, a) => s + (a.stackCount ?? 1))}));
       case AssetAction.addToAlbum:
         if (!context.mounted) return false;
         final msg = await showDialog<String>(

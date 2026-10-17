@@ -42,6 +42,12 @@ class _ViewerScreenState extends State<ViewerScreen> {
   late int _index = widget.initialIndex;
   AssetRef? _asset;
   Map<String, dynamic>? _detail;
+  /// The shown photo's stack (GET /stacks/:id): {id, primaryAssetId, assets}.
+  Map<String, dynamic>? _stack;
+  /// A stack changed here: the timeline reloads when the viewer closes.
+  bool _stackChanged = false;
+  /// Only the owner may change a stack.
+  String? _myId;
   List<Album>? _albums;
   bool _showInfo = false;
   final _transform = TransformationController();
@@ -69,6 +75,13 @@ class _ViewerScreenState extends State<ViewerScreen> {
       if (done && _motion && mounted) setState(() => _motion = false); // back to the still, like the web
     });
     _go(_index);
+    // A timeline message (e.g. "Stacked 2 assets") would cover the stack strip.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
+    });
+    api.myId().then((id) {
+      if (mounted) setState(() => _myId = id);
+    }, onError: (_) {});
   }
 
   /// From the timeline row, or the asset details (search results lack it).
@@ -93,6 +106,8 @@ class _ViewerScreenState extends State<ViewerScreen> {
 
   @override
   void dispose() {
+    // Not while the tree is being torn down: the home screen rebuilds on it.
+    if (_stackChanged) Future.microtask(() => libraryChanged.value++);
     _motionDone?.cancel();
     _player.dispose();
     _transform.dispose();
@@ -201,6 +216,29 @@ class _ViewerScreenState extends State<ViewerScreen> {
     setState(() {
       _index = index;
       _asset = widget.source.at(index);
+      _stack = null;
+      _reset();
+    });
+    final a = _asset ?? await widget.source.load(index);
+    if (!mounted || _index != index || a == null) return;
+    setState(() => _asset = a);
+    _prefetch(index + 1);
+    _prefetch(index - 1);
+    await _open(a);
+  }
+
+  /// Shows another photo of the same stack, keeping the place in the list.
+  Future<void> _showStackMember(Map<String, dynamic> json) async {
+    final a = AssetRef.fromAssetJson(json);
+    if (a.id == _asset?.id) return;
+    setState(() {
+      _asset = a;
+      _reset();
+    });
+    await _open(a);
+  }
+
+  void _reset() {
       _detail = null;
       _motion = false;
       _faces = null;
@@ -210,27 +248,32 @@ class _ViewerScreenState extends State<ViewerScreen> {
       _hoverFace = null;
       _albums = null;
       _transform.value = Matrix4.identity();
-    });
-    final a = _asset ?? await widget.source.load(index);
-    if (!mounted || _index != index || a == null) return;
-    setState(() => _asset = a);
+  }
 
+  /// Loads what the shown photo [a] needs: video, details, stack, albums.
+  Future<void> _open(AssetRef a) async {
+    bool current() => mounted && _asset?.id == a.id;
     if (a.isImage || a.isPanorama) {
       await _player.stop(); // 360° videos play in their own viewer
     } else {
       await _player.open(Media(api.videoUrl(a.id), httpHeaders: api.headers));
     }
-    _prefetch(index + 1);
-    _prefetch(index - 1);
     try {
       final d = await api.asset(a.id);
-      if (mounted && _index == index) setState(() => _detail = d);
+      if (current()) setState(() => _detail = d);
       // Search results lack the projection; a 360° video found only now leaves the flat player.
-      if (mounted && _index == index && !a.isImage && _isPanorama(a)) await _player.stop();
+      if (current() && !a.isImage && _isPanorama(a)) await _player.stop();
+      final stackId = d['stack']?['id'] as String?;
+      if (stackId == null) {
+        if (current()) setState(() => _stack = null);
+      } else if (_stack?['id'] != stackId) {
+        final st = await api.stack(stackId);
+        if (current()) setState(() => _stack = st);
+      }
     } catch (_) {}
     try {
       final albums = await api.albumsOf(a.id);
-      if (mounted && _index == index) setState(() => _albums = albums);
+      if (current()) setState(() => _albums = albums);
     } catch (_) {}
   }
 
@@ -268,6 +311,95 @@ class _ViewerScreenState extends State<ViewerScreen> {
           _go(_index.clamp(0, widget.source.length - 1));
         }
     }
+  }
+
+  /// Web: getStackActions (asset viewer, owner only).
+  Future<void> _stackAction(String action) async {
+    final st = _stack, a = _asset;
+    if (st == null || a == null) return;
+    final id = st['id'] as String;
+    final messenger = ScaffoldMessenger.of(context);
+    void say(String msg) => messenger.showSnackBar(SnackBar(content: Text(msg)));
+    try {
+      switch (action) {
+        case 'primary':
+          await api.setStackPrimary(id, a.id);
+          final updated = await api.stack(id);
+          if (mounted) setState(() => _stack = updated);
+        case 'remove':
+          await api.removeFromStack(id, a.id);
+          final updated = await api.stack(id);
+          if (!mounted) return;
+          setState(() => _stack = updated);
+          // Web: the photo left the stack, so show the stack's primary photo.
+          final assets = (updated['assets'] as List).cast<Map<String, dynamic>>();
+          await _showStackMember(assets.firstWhere((x) => x['id'] == updated['primaryAssetId'],
+              orElse: () => assets.first));
+        case 'keep':
+          if (!await confirmDialog(context, t('keep_this_delete_others'), t('confirm_keep_this_delete_others'),
+              t('delete_others'))) {
+            return;
+          }
+          final others = [
+            for (final x in (st['assets'] as List).cast<Map<String, dynamic>>())
+              if (x['id'] != a.id) x['id'] as String,
+          ];
+          await api.deleteAssets(others);
+          await api.deleteStacks([id]);
+          if (mounted) setState(() => _stack = null);
+          say(t('kept_this_deleted_others', {'count': others.length}));
+        case 'unstack':
+          await api.deleteStacks([id]);
+          if (mounted) setState(() => _stack = null);
+          say(t('unstacked_assets_count', {'count': (st['assets'] as List).length}));
+      }
+      _stackChanged = true;
+    } catch (e) {
+      say('${t('error')}: $e');
+    }
+  }
+
+  /// The other photos of the stack, at the bottom (web: #stack-slideshow).
+  Widget _stackStrip(Map<String, dynamic> st, AssetRef current) {
+    final assets = (st['assets'] as List).cast<Map<String, dynamic>>();
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 12,
+      child: Center(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            for (final x in assets)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: Tooltip(
+                  message: '${x['originalFileName'] ?? ''}'
+                      '${x['id'] == st['primaryAssetId'] ? ' · ${t('linux_stack_primary')}' : ''}',
+                  child: InkWell(
+                    key: ValueKey('stack-${x['id']}'),
+                    onTap: () => _showStackMember(x),
+                    child: Container(
+                      width: x['id'] == current.id ? 66 : 60,
+                      height: x['id'] == current.id ? 66 : 60,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: x['id'] == current.id ? Colors.white : Colors.transparent, width: 2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Opacity(
+                        opacity: x['id'] == current.id ? 1 : 0.7,
+                        child: Image.network(api.thumbnailUrl(x['id'] as String),
+                            headers: api.headers, fit: BoxFit.cover, errorBuilder: (_, _, _) => const SizedBox()),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ]),
+        ),
+      ),
+    );
   }
 
   Future<void> _download() async {
@@ -353,6 +485,8 @@ class _ViewerScreenState extends State<ViewerScreen> {
                       PanoramaVideoViewer(key: ValueKey(a.id), api: api, assetId: a.id)
                     else
                       Video(controller: _video, controls: MaterialDesktopVideoControls),
+                    if (a != null && _stack != null && (_stack!['assets'] as List).length > 1)
+                      _stackStrip(_stack!, a),
                     _buildTopBar(),
                     if (_tagBox != null) _taggingBar(),
                     if (_index > 0)
@@ -569,6 +703,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
               icon: const Icon(Icons.download),
               onPressed: _download,
             ),
+            if (_stack != null && _myId != null && _detail?['ownerId'] == _myId) _stackMenu(),
             IconButton(
               tooltip: t('linux_info_key'),
               icon: Icon(_showInfo ? Icons.info : Icons.info_outline),
@@ -612,6 +747,38 @@ class _ViewerScreenState extends State<ViewerScreen> {
         ],
       TimelineMode.readOnly => const [],
     };
+  }
+
+  Widget _stackMenu() {
+    final st = _stack!;
+    final isPrimary = st['primaryAssetId'] == _asset?.id;
+    return MenuAnchor(
+      menuChildren: [
+        if (!isPrimary)
+          MenuItemButton(
+              leadingIcon: const Icon(Icons.push_pin_outlined),
+              onPressed: () => _stackAction('primary'),
+              child: Text(t('set_stack_primary_asset'))),
+        if (!isPrimary && (st['assets'] as List).length > 2)
+          MenuItemButton(
+              leadingIcon: const Icon(Icons.remove_circle_outline),
+              onPressed: () => _stackAction('remove'),
+              child: Text(t('viewer_remove_from_stack'))),
+        MenuItemButton(
+            leadingIcon: const Icon(Icons.delete_sweep_outlined),
+            onPressed: () => _stackAction('keep'),
+            child: Text(t('keep_this_delete_others'))),
+        MenuItemButton(
+            leadingIcon: const Icon(Icons.layers_clear_outlined),
+            onPressed: () => _stackAction('unstack'),
+            child: Text(t('unstack'))),
+      ],
+      builder: (context, ctl, _) => IconButton(
+        tooltip: t('view_stack'),
+        icon: const Icon(Icons.burst_mode_outlined),
+        onPressed: () => ctl.isOpen ? ctl.close() : ctl.open(),
+      ),
+    );
   }
 
   Widget _navButton(Alignment align, IconData icon, VoidCallback onTap) {

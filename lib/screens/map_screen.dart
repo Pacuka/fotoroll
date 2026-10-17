@@ -161,6 +161,7 @@ class _MapScreenState extends State<MapScreen> {
       isFavorite: _favoritesOnly ? true : null,
       visibility: _includeArchived ? null : 'timeline',
       withPartners: _withPartners ? true : null,
+      withStacked: true,
     );
     try {
       final src = await TimelineSource.create(widget.api, query);

@@ -55,7 +55,7 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | Editor (crop, rotate, filters) | ⬜ |
 | Slideshow (shuffle / forward / backward, contain / cover / blurred, progress bar, fade, video autoplay, repeat, info overlay, full screen) | ✅ |
 | Activity / comments / likes (shared albums) | ⬜ |
-| Stacks | ⬜ |
+| Stacks (strip of the stack's photos; set primary, remove, keep this / delete others, unstack) | ✅ |
 | Live / motion photos (badge, hover playback, "Play Motion Photo" in the viewer) | ✅ |
 | 360° / 180° panorama photos (GPano crop, drag / zoom, 360 badge on tiles) and 360° videos (mpv v360) | ✅ |
 | Share (shared link) | ✅ |
@@ -67,7 +67,7 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | Favorite, archive, trash, delete permanently, restore, add to album, remove from album, download zip, locked folder | ✅ |
 | Share link | ✅ |
 | Change date (fixed or by offset), description, location, tag (own photos only, like the web) | ✅ |
-| Stack | ⬜ |
+| Stack / unstack (one tile per stack with a count) | ✅ |
 
 ## Account settings (web `/user-settings`)
 | Section | Status |

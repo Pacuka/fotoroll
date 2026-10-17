@@ -57,6 +57,9 @@ class AssetRef {
   final String? livePhotoVideoId;
   /// Null when the server didn't say (then it counts as the user's own).
   final String? ownerId;
+  /// The stack this photo heads (timelines with stacks show only the primary photo).
+  final String? stackId;
+  final int? stackCount;
 
   const AssetRef({
     required this.id,
@@ -68,6 +71,8 @@ class AssetRef {
     this.isPanorama = false,
     this.livePhotoVideoId,
     this.ownerId,
+    this.stackId,
+    this.stackCount,
   });
 
   AssetRef copyWith({bool? isFavorite}) => AssetRef(
@@ -80,6 +85,8 @@ class AssetRef {
         isPanorama: isPanorama,
         livePhotoVideoId: livePhotoVideoId,
         ownerId: ownerId,
+        stackId: stackId,
+        stackCount: stackCount,
       );
 
   /// Web: projectionType EQUIRECTANGULAR, or an Insta360 .insp file.
@@ -99,6 +106,8 @@ class AssetRef {
       isPanorama: panoramaFrom(j['exifInfo']?['projectionType'] as String?, j['originalPath'] as String?),
       livePhotoVideoId: j['type'] == 'IMAGE' ? j['livePhotoVideoId'] as String? : null,
       ownerId: j['ownerId'] as String?,
+      stackId: j['stack']?['id'] as String?,
+      stackCount: (j['stack']?['assetCount'] as num?)?.toInt(),
     );
   }
 }
@@ -120,6 +129,8 @@ class TimelineQuery {
   final String? visibility;
   final bool byUploadDate; // "recently added" orders by createdAt
   final bool? withPartners;
+  /// One tile per stack (its primary photo), like the web's main timelines.
+  final bool? withStacked;
   /// Map area as "west,south,east,north".
   final String? bbox;
   final String order; // desc (newest first) | asc
@@ -134,20 +145,21 @@ class TimelineQuery {
     this.visibility = 'timeline',
     this.byUploadDate = false,
     this.withPartners,
+    this.withStacked,
     this.bbox,
     this.order = 'desc',
     this.tagId,
   });
 
   // Web /photos and /recently-added include partners shown "in timeline".
-  static const photos = TimelineQuery(withPartners: true);
+  static const photos = TimelineQuery(withPartners: true, withStacked: true);
   static const favorites = TimelineQuery(isFavorite: true, visibility: null);
   static const archive = TimelineQuery(visibility: 'archive');
   static const trash = TimelineQuery(isTrashed: true, visibility: null);
   static const locked = TimelineQuery(visibility: 'locked');
-  static const recent = TimelineQuery(byUploadDate: true, withPartners: true);
+  static const recent = TimelineQuery(byUploadDate: true, withPartners: true, withStacked: true);
   factory TimelineQuery.album(String id, {String order = 'desc'}) =>
-      TimelineQuery(albumId: id, visibility: null, order: order);
+      TimelineQuery(albumId: id, visibility: null, order: order, withStacked: true);
 
   Map<String, String?> get params => {
         'albumId': albumId,
@@ -158,6 +170,7 @@ class TimelineQuery {
         'visibility': visibility,
         'orderBy': byUploadDate ? 'createdAt' : null,
         'withPartners': withPartners?.toString(),
+        'withStacked': withStacked?.toString(),
         'bbox': bbox,
         'tagId': tagId,
         'order': order,
@@ -767,6 +780,9 @@ class ImmichApi {
       await _sendJson('POST', '/stacks', {'assetIds': assetIds});
   Future<Map<String, dynamic>> stack(String id) async => await _getJson('/stacks/$id');
   Future<void> deleteStacks(List<String> ids) => _sendJson('DELETE', '/stacks', {'ids': ids});
+  Future<void> setStackPrimary(String id, String assetId) =>
+      _sendJson('PUT', '/stacks/$id', {'primaryAssetId': assetId});
+  Future<void> removeFromStack(String id, String assetId) => _sendJson('DELETE', '/stacks/$id/assets/$assetId');
 
   // ---- Memories ----
 
@@ -1157,6 +1173,9 @@ class ImmichApi {
     final projection = (j['projectionType'] as List?) ?? const [];
     final live = (j['livePhotoVideoId'] as List?) ?? const [];
     final owner = (j['ownerId'] as List?) ?? const [];
+    // [stackId, assetCount] per asset, or null.
+    final stack = (j['stack'] as List?) ?? const [];
+    List? stackOf(int i) => i < stack.length ? stack[i] as List? : null;
     DateTime? local(int i) {
       if (i >= created.length) return null;
       final utc = DateTime.tryParse('${created[i]}')?.toUtc();
@@ -1178,11 +1197,14 @@ class ImmichApi {
           isPanorama: i < projection.length && AssetRef.panoramaFrom(projection[i] as String?),
           livePhotoVideoId: isImage[i] == true && i < live.length ? live[i] as String? : null,
           ownerId: i < owner.length ? owner[i] as String? : null,
+          stackId: stackOf(i)?[0] as String?,
+          stackCount: int.tryParse('${stackOf(i)?[1]}'),
         ),
     ];
   }
 
   Future<Map<String, dynamic>> asset(String id) async => await _getJson('/assets/$id');
+
 
   Future<List<Album>> albums() async {
     final owned = await _getJson('/albums') as List;

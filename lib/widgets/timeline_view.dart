@@ -332,7 +332,7 @@ class _TimelineViewState extends State<TimelineView> {
                           albumId: widget.albumId,
                           count: selected.length,
                           allOwned: allOwned),
-                  menu: widget.onPicked != null ? const [] : menuActionsFor(widget.mode, allOwned: allOwned),
+                  menu: widget.onPicked != null ? const [] : menuActionsFor(widget.mode, selected, allOwned: allOwned),
                   onAction: _run,
                   trailing: widget.onPicked == null
                       ? null
@@ -518,6 +518,17 @@ class _TileState extends State<_Tile> {
               right: 8,
               top: 6,
               child: Icon(Icons.threesixty, color: Colors.white, size: 22, shadows: shadow),
+            ),
+          if (a.stackCount != null)
+            Positioned(
+              right: 8,
+              bottom: 6,
+              child: Row(children: [
+                Text('${a.stackCount}',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, shadows: shadow)),
+                const SizedBox(width: 4),
+                const Icon(Icons.burst_mode_outlined, color: Colors.white, size: 22, shadows: shadow),
+              ]),
             ),
           if (a.isFavorite)
             const Positioned(
