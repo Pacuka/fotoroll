@@ -11,10 +11,6 @@ import 'window.dart' show appId, desktopExecArg;
 /// Path of the running AppImage file (set by the AppImage runtime), or null.
 String? get appImagePath => Platform.environment['APPIMAGE'];
 
-/// What starts the app again later: the AppImage file itself when running as one
-/// (the binary inside lives on a temporary mount), else the binary.
-String get launchCommand => appImagePath ?? Platform.resolvedExecutable;
-
 String _dataHome() =>
     Platform.environment['XDG_DATA_HOME'] ?? p.join(Platform.environment['HOME'] ?? '.', '.local', 'share');
 

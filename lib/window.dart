@@ -98,9 +98,17 @@ Future<void> setAutostart(bool on, {String? executable}) async {
     return;
   }
   await f.parent.create(recursive: true);
-  // As an AppImage, the binary sits on a mount that is gone after exit: start the
-  // AppImage file itself.
-  await f.writeAsString(autostartEntry(executable ?? Platform.environment['APPIMAGE'] ?? Platform.resolvedExecutable));
+  await f.writeAsString(autostartEntry(executable ?? launchCommand()));
+}
+
+/// What starts the app again later. As an AppImage, the binary sits on a mount
+/// that is gone after exit: the AppImage file itself. A distro package (e.g. the
+/// AUR one) names its launcher script in FOTOROLL_LAUNCHER: the binary alone
+/// would miss the bundled libraries the script sets up.
+@visibleForTesting
+String launchCommand([Map<String, String>? env, String? executable]) {
+  env ??= Platform.environment;
+  return env['APPIMAGE'] ?? env['FOTOROLL_LAUNCHER'] ?? executable ?? Platform.resolvedExecutable;
 }
 
 /// [path] as one quoted argument of a .desktop Exec key (Desktop Entry spec):

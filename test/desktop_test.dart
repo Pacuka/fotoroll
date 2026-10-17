@@ -32,6 +32,14 @@ void main() {
     expect(e, contains('Icon=io.github.pacuka.Fotoroll'));
   });
 
+  test('autostart starts the AppImage file or a package launcher, not the bare binary', () {
+    const bin = '/opt/fotoroll/usr/bin/fotoroll';
+    expect(launchCommand({}, bin), bin);
+    expect(launchCommand({'FOTOROLL_LAUNCHER': '/usr/bin/fotoroll'}, bin), '/usr/bin/fotoroll');
+    expect(launchCommand({'APPIMAGE': '/home/x/Fotoroll.AppImage', 'FOTOROLL_LAUNCHER': '/usr/bin/fotoroll'}, bin),
+        '/home/x/Fotoroll.AppImage');
+  });
+
   test('Exec quoting follows the Desktop Entry spec', () {
     expect(desktopExecArg('/home/x/My Apps/Fotoroll.AppImage'), '"/home/x/My Apps/Fotoroll.AppImage"');
     // In the file: \\" for a quote, \\\\ for a backslash, \\$ for a dollar, %% for a percent.
