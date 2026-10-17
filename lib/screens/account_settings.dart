@@ -685,7 +685,15 @@ class _ApiKeysSectionState extends State<_ApiKeysSection> {
               title: Text(k['name'] ?? ''),
               subtitle: Text('${t('created')}: ${_date(k['createdAt'])}'),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                IconButton(tooltip: t('rotate_key'), icon: const Icon(Icons.autorenew), onPressed: () => _rotate(k)),
+                ValueListenableBuilder(
+                  valueListenable: widget.api.serverVersion,
+                  builder: (context, _, _) => widget.api.supports(Since.rotateApiKey)
+                      ? IconButton(tooltip: t('rotate_key'), icon: const Icon(Icons.autorenew), onPressed: () => _rotate(k))
+                      : Tooltip(
+                          message: requiresText(Since.rotateApiKey),
+                          child: const IconButton(icon: Icon(Icons.autorenew), onPressed: null),
+                        ),
+                ),
                 IconButton(
                   tooltip: t('delete'),
                   icon: const Icon(Icons.delete_outline),

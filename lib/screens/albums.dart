@@ -406,8 +406,9 @@ class _AlbumScreenState extends State<AlbumScreen> {
     final a = _album;
     final theme = Theme.of(context);
     final owner = _me != null && a.ownerId == _me;
-    // Editors may change the title and description too (Immich v3.3, web isAlbumEditor).
     final editor = owner || a.albumUsers.any((u) => u['user']?['id'] == _me && u['role'] == 'editor');
+    // Editors may change the title and description too (Immich v3.3, web isAlbumEditor).
+    final canEdit = owner || (editor && api.supports(Since.albumEditorDetails));
     final fmt = DateFormat.yMMMd(i18n.dateLocale);
     final range = a.startDate == null
         ? null
@@ -463,7 +464,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                   child: Text(t('delete_album')),
                 ),
               ] else ...[
-                if (editor)
+                if (canEdit)
                   MenuItemButton(
                       leadingIcon: const Icon(Icons.edit_outlined), onPressed: _edit, child: Text(t('edit_album'))),
                 MenuItemButton(
@@ -484,7 +485,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             InkWell(
-              onTap: editor ? _edit : null,
+              onTap: canEdit ? _edit : null,
               child: Text(a.name, style: theme.textTheme.headlineMedium),
             ),
             const SizedBox(height: 4),

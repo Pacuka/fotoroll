@@ -588,8 +588,10 @@ class PersonScreen extends StatefulWidget {
 class _PersonScreenState extends State<PersonScreen> {
   late Person _person = widget.person;
   ImmichApi get api => widget.api;
-  /// Sharing people needs a cluster group with others (v3.3).
-  late final Future<bool> _canShare = api.clusterGroupOthers().then((o) => o.isNotEmpty, onError: (_) => false);
+  /// Sharing people needs v3.3 and a cluster group with others.
+  late final Future<bool> _canShare = api.supports(Since.sharedPeople)
+      ? api.clusterGroupOthers().then((o) => o.isNotEmpty, onError: (_) => false)
+      : Future.value(false);
 
   @override
   void initState() {

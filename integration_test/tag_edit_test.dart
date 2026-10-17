@@ -153,6 +153,17 @@ void main() {
     await shot('tag_rename_unsupported');
     await gone(nameField);
 
+    // 4. Once the app knows the server is v3.1, the name can't be edited and the dialog says why.
+    await api.loadServerVersion();
+    await tap(find.byTooltip('Edit tag'));
+    await waitFor(find.text('Needs Immich v3.3 or newer'));
+    expect(tester.widget<TextField>(nameField).enabled, isFalse);
+    await shot('tag_rename_needs_v33');
+    await tap(find.byTooltip('#1e88e5'));
+    await tap(find.text('Save'));
+    await until(() => tag(501)['color'] == '#1e88e5', 'colour still saved');
+    expect(tag(501)['value'], 'Trips/Hellas');
+
     expect(errors, isEmpty);
     FlutterError.onError = previous;
     await server.stop();

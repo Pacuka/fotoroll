@@ -104,7 +104,9 @@ class _TagEditDialog extends StatefulWidget {
   final String name;
   final String color;
   final String parent;
-  const _TagEditDialog({required this.name, required this.color, required this.parent});
+  /// False on servers before v3.3, which ignore a new name.
+  final bool canRename;
+  const _TagEditDialog({required this.name, required this.color, required this.parent, required this.canRename});
 
   @override
   State<_TagEditDialog> createState() => _TagEditDialogState();
@@ -176,8 +178,12 @@ class _TagEditDialogState extends State<_TagEditDialog> {
           const SizedBox(height: 8),
           TextField(
             controller: _name,
-            autofocus: true,
-            decoration: InputDecoration(labelText: t('name'), errorText: _nameError),
+            autofocus: widget.canRename,
+            enabled: widget.canRename,
+            decoration: InputDecoration(
+                labelText: t('name'),
+                errorText: _nameError,
+                helperText: widget.canRename ? null : requiresText(Since.tagRename)),
             onChanged: (_) => setState(() {}),
             onSubmitted: (_) => _save(),
           ),
@@ -218,7 +224,11 @@ class _TagsScreenState extends State<TagsScreen> {
     final parent = value.contains('/') ? value.substring(0, value.lastIndexOf('/') + 1) : '';
     final result = await showDialog<(String, String)>(
       context: context,
-      builder: (_) => _TagEditDialog(name: value.split('/').last, color: tag['color'] ?? '', parent: parent),
+      builder: (_) => _TagEditDialog(
+          name: value.split('/').last,
+          color: tag['color'] ?? '',
+          parent: parent,
+          canRename: widget.api.supports(Since.tagRename)),
     );
     if (result == null) return;
     final (name, color) = result;

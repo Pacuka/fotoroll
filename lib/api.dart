@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 
@@ -432,6 +433,49 @@ class SearchPage {
   const SearchPage(this.assets, this.nextPage);
 }
 
+/// An Immich server version (GET /server/version).
+class ServerVersion implements Comparable<ServerVersion> {
+  final int major, minor, patch;
+  const ServerVersion(this.major, this.minor, [this.patch = 0]);
+
+  factory ServerVersion.fromJson(Map<String, dynamic> j) =>
+      ServerVersion((j['major'] as num).toInt(), (j['minor'] as num).toInt(), (j['patch'] as num).toInt());
+
+  @override
+  int compareTo(ServerVersion other) => major != other.major
+      ? major - other.major
+      : minor != other.minor
+          ? minor - other.minor
+          : patch - other.patch;
+
+  bool isAtLeast(ServerVersion other) => compareTo(other) >= 0;
+
+  @override
+  bool operator ==(Object other) => other is ServerVersion && compareTo(other) == 0;
+
+  @override
+  int get hashCode => Object.hash(major, minor, patch);
+
+  @override
+  String toString() => 'v$major.$minor.$patch';
+
+  /// "v3.2": how messages name the version a feature needs.
+  String get short => 'v$major.$minor';
+}
+
+/// The oldest server Fotoroll supports, and the versions that brought the
+/// features it hides or disables on older servers.
+abstract final class Since {
+  static const supported = ServerVersion(3, 1);
+  static const rotateApiKey = ServerVersion(3, 2);
+  static const tagRename = ServerVersion(3, 3);
+  static const sharedPeople = ServerVersion(3, 3);
+  static const albumEditorDetails = ServerVersion(3, 3);
+}
+
+/// "Needs Immich v3.2 or newer": shown on what the server is too old for.
+String requiresText(ServerVersion v) => t('linux_requires_version', {'version': v.short});
+
 class ImmichApi {
   /// Changes only when the API key the app signs in with is rotated.
   Credentials creds;
@@ -453,6 +497,13 @@ class ImmichApi {
   void close() => _client.close();
 
   ImmichApi(this.creds);
+
+  /// Set by [loadServerVersion]; null until then, or when the server couldn't be reached.
+  final serverVersion = ValueNotifier<ServerVersion?>(null);
+
+  /// False only when the server is known to be older than [v]. An unknown version
+  /// counts as new enough: the calls then fall back on a 404 as before.
+  bool supports(ServerVersion v) => serverVersion.value?.isAtLeast(v) ?? true;
 
   String get base => '${normalizeServerUrl(creds.serverUrl)}/api';
   Map<String, String> get headers => creds.headers;
@@ -1219,9 +1270,10 @@ class ImmichApi {
   Future<ServerStorage> serverStorage() async =>
       ServerStorage.fromJson(await _getJson('/server/storage'));
 
-  Future<String> serverVersion() async {
-    final j = await _getJson('/server/version');
-    return 'v${j['major']}.${j['minor']}.${j['patch']}';
+  Future<ServerVersion> loadServerVersion() async {
+    final v = ServerVersion.fromJson(await _getJson('/server/version'));
+    serverVersion.value = v;
+    return v;
   }
 
   Future<int> trashDays() async => await _orOlder(

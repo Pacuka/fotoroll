@@ -131,6 +131,8 @@ class FakeImmich {
   bool enforceApiKeys = false;
   /// Behave like Immich v3.1: no POST /api-keys/:id/rotate, tag updates ignore `name`.
   bool v31 = false;
+  /// What GET /server/version reports (v31 makes it 3.1.0).
+  List<int> version = [3, 3, 3];
 
   int get port => _server.port;
   String get url => 'http://127.0.0.1:$port';
@@ -261,7 +263,8 @@ class FakeImmich {
     } else if (path == '/api/server/storage') {
       out = {'diskUse': '1 GiB', 'diskSize': '10 GiB', 'diskUsagePercentage': 10};
     } else if (path == '/api/server/version') {
-      out = {'major': 3, 'minor': 3, 'patch': 3};
+      final v = v31 ? [3, 1, 0] : version;
+      out = {'major': v[0], 'minor': v[1], 'patch': v[2]};
     } else if (path == '/api/config') {
       out = {'trash': {'enabled': true, 'days': 30}};
     } else if (path == '/api/server/media-types') {

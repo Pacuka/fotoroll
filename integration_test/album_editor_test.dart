@@ -142,6 +142,22 @@ void main() {
     expect(find.widgetWithText(TextField, 'Album Name'), findsNothing);
     expect(patches(), before);
 
+    // 3. Before v3.3 editors may only add photos: no "Edit album", the title isn't clickable.
+    server.v31 = true;
+    await api.loadServerVersion();
+    await open(uid(700));
+    await waitFor(find.text('Trip to Tokaj'));
+    expect(find.byTooltip('Add photos'), findsOneWidget);
+    await tap(find.byTooltip('Album options'));
+    await waitFor(find.text('Leave album'));
+    expect(find.text('Edit album'), findsNothing);
+    await shot('album_editor_menu_v31');
+    await tap(find.byTooltip('Album options'));
+    await gone(find.text('Leave album'));
+    await tap(find.text('Trip to Tokaj'));
+    expect(find.widgetWithText(TextField, 'Album Name'), findsNothing);
+    expect(patches(), before);
+
     expect(errors, isEmpty);
     FlutterError.onError = previous;
     await server.stop();

@@ -923,7 +923,7 @@ class _StorageCard extends StatefulWidget {
 
 class _StorageCardState extends State<_StorageCard> {
   late final Future<ServerStorage> _storage = widget.api.serverStorage();
-  late final Future<String> _version = widget.api.serverVersion();
+  late final Future<ServerVersion> _version = widget.api.loadServerVersion();
 
   @override
   Widget build(BuildContext context) {
@@ -957,21 +957,29 @@ class _StorageCardState extends State<_StorageCard> {
           },
         ),
         const SizedBox(height: 12),
-        FutureBuilder<String>(
+        FutureBuilder<ServerVersion>(
           future: _version,
           builder: (context, snap) {
             final online = snap.hasData;
-            return Row(children: [
-              Icon(Icons.circle, size: 10,
-                  color: snap.connectionState == ConnectionState.waiting
-                      ? Colors.grey
-                      : online
-                          ? Colors.green
-                          : theme.colorScheme.error),
-              const SizedBox(width: 8),
-              Expanded(child: Text(online ? t('server_online') : t('linux_server_offline'),
-                  style: theme.textTheme.bodySmall)),
-              if (online) Text(snap.data!, style: theme.textTheme.bodySmall),
+            final tooOld = online && !snap.data!.isAtLeast(Since.supported);
+            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(Icons.circle, size: 10,
+                    color: snap.connectionState == ConnectionState.waiting
+                        ? Colors.grey
+                        : online && !tooOld
+                            ? Colors.green
+                            : theme.colorScheme.error),
+                const SizedBox(width: 8),
+                Expanded(child: Text(online ? t('server_online') : t('linux_server_offline'),
+                    style: theme.textTheme.bodySmall)),
+                if (online) Text('${snap.data}', style: theme.textTheme.bodySmall),
+              ]),
+              if (tooOld) ...[
+                const SizedBox(height: 4),
+                Text(t('linux_server_too_old', {'version': Since.supported.short}),
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+              ],
             ]);
           },
         ),

@@ -66,7 +66,12 @@ class _FotorollAppState extends State<FotorollApp> {
     });
   }
 
-  ImmichApi _newApi(Credentials creds) => ImmichApi(creds)..onCredentialsChanged = _store.save;
+  ImmichApi _newApi(Credentials creds) {
+    final api = ImmichApi(creds)..onCredentialsChanged = _store.save;
+    // Lets the screens hide what an older server can't do; offline it stays unknown.
+    api.loadServerVersion().ignore();
+    return api;
+  }
 
   Future<void> _onLoggedIn(Credentials creds) async {
     await _store.save(creds);

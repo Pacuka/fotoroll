@@ -136,6 +136,14 @@ void main() {
     expect(key('cli')['secret'], before);
     expect(find.text('Close'), findsNothing);
 
+    // 4. Once the app knows the server is v3.1, the button is disabled and says why.
+    expect(find.byTooltip('Needs Immich v3.2 or newer'), findsNothing);
+    await api.loadServerVersion();
+    await waitFor(find.byTooltip('Needs Immich v3.2 or newer'));
+    expect(find.byTooltip('Rotate key'), findsNothing);
+    await tester.longPress(find.byTooltip('Needs Immich v3.2 or newer').first);
+    await shot('api_key_rotate_needs_v32');
+
     expect(errors, isEmpty);
     FlutterError.onError = previous;
     await server.stop();
