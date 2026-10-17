@@ -14,6 +14,7 @@ import '../window.dart';
 import 'slideshow.dart';
 import '../widgets/faces.dart';
 import '../widgets/panorama_viewer.dart';
+import '../widgets/activity.dart';
 import '../widgets/asset_actions.dart';
 import '../widgets/info_panel.dart';
 import '../host.dart';
@@ -48,6 +49,20 @@ class _ViewerScreenState extends State<ViewerScreen> {
   bool _stackChanged = false;
   /// Only the owner may change a stack.
   String? _myId;
+  /// A text field (description, comment) has the keyboard.
+  bool _typing = false;
+
+  void _onFocusChange() {
+    final ctx = FocusManager.instance.primaryFocus?.context;
+    final typing =
+        ctx != null && (ctx.widget is EditableText || ctx.findAncestorWidgetOfExactType<EditableText>() != null);
+    if (typing != _typing && mounted) setState(() => _typing = typing);
+  }
+
+  /// The album the viewer was opened from; its comments and likes when shared.
+  Album? _album;
+  ActivityState? _activity;
+  bool _showActivity = false;
   List<Album>? _albums;
   bool _showInfo = false;
   final _transform = TransformationController();
@@ -82,6 +97,28 @@ class _ViewerScreenState extends State<ViewerScreen> {
     api.myId().then((id) {
       if (mounted) setState(() => _myId = id);
     }, onError: (_) {});
+    FocusManager.instance.addListener(_onFocusChange);
+    if (widget.albumId case final id?) {
+      api.album(id).then((al) {
+        if (!mounted) return;
+        setState(() => _album = al);
+        if (_asset case final a?) _loadActivity(a);
+      }, onError: (_) {});
+    }
+  }
+
+  /// The shown photo's comments and likes, in a shared album.
+  void _loadActivity(AssetRef a) {
+    _activity?.dispose();
+    _activity = null;
+    final al = _album;
+    if (al == null || al.albumUsers.isEmpty) return;
+    final act = ActivityState(api, al, assetId: a.id);
+    act.addListener(() {
+      if (mounted) setState(() {});
+    });
+    _activity = act;
+    act.load().catchError((_) {});
   }
 
   /// From the timeline row, or the asset details (search results lack it).
@@ -109,6 +146,8 @@ class _ViewerScreenState extends State<ViewerScreen> {
     // Not while the tree is being torn down: the home screen rebuilds on it.
     if (_stackChanged) Future.microtask(() => libraryChanged.value++);
     _motionDone?.cancel();
+    _activity?.dispose();
+    FocusManager.instance.removeListener(_onFocusChange);
     _player.dispose();
     _transform.dispose();
     _focus.dispose();
@@ -222,8 +261,11 @@ class _ViewerScreenState extends State<ViewerScreen> {
     final a = _asset ?? await widget.source.load(index);
     if (!mounted || _index != index || a == null) return;
     setState(() => _asset = a);
-    _prefetch(index + 1);
-    _prefetch(index - 1);
+    // After the frame: on the first photo this runs inside initState, too early for precacheImage.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _prefetch(index + 1);
+      _prefetch(index - 1);
+    });
     await _open(a);
   }
 
@@ -250,9 +292,10 @@ class _ViewerScreenState extends State<ViewerScreen> {
       _transform.value = Matrix4.identity();
   }
 
-  /// Loads what the shown photo [a] needs: video, details, stack, albums.
+  /// Loads what the shown photo [a] needs: video, details, stack, albums, comments.
   Future<void> _open(AssetRef a) async {
     bool current() => mounted && _asset?.id == a.id;
+    _loadActivity(a);
     if (a.isImage || a.isPanorama) {
       await _player.stop(); // 360° videos play in their own viewer
     } else {
@@ -450,11 +493,16 @@ class _ViewerScreenState extends State<ViewerScreen> {
             Navigator.of(context).maybePop();
           }
         },
-        const SingleActivator(LogicalKeyboardKey.keyI): () =>
-            setState(() => _showInfo = !_showInfo),
-        const SingleActivator(LogicalKeyboardKey.keyD): _download,
         const SingleActivator(LogicalKeyboardKey.f11): toggleFullScreen,
-        if (widget.mode == TimelineMode.normal || widget.mode == TimelineMode.archive) ...{
+        // Letter keys are text while typing (description, comment): no shortcuts then.
+        if (!_typing) ...{
+          const SingleActivator(LogicalKeyboardKey.keyI): () => setState(() {
+                _showInfo = !_showInfo;
+                _showActivity = false;
+              }),
+          const SingleActivator(LogicalKeyboardKey.keyD): _download,
+        },
+        if (!_typing && (widget.mode == TimelineMode.normal || widget.mode == TimelineMode.archive)) ...{
           const SingleActivator(LogicalKeyboardKey.keyF): () => _act(
               _asset?.isFavorite == true ? AssetAction.unfavorite : AssetAction.favorite),
           const SingleActivator(LogicalKeyboardKey.keyA): () => _act(
@@ -467,6 +515,13 @@ class _ViewerScreenState extends State<ViewerScreen> {
         autofocus: true,
         child: Scaffold(
           backgroundColor: Colors.black,
+          // Comments and likes (shared album); as the floating button it moves up for messages.
+          floatingActionButton: _activity != null && _activity!.visible && !_showActivity && !_showInfo
+              ? ActivityStatusPill(
+                  state: _activity!,
+                  onComments: () => setState(() => _showActivity = true),
+                )
+              : null,
           body: Row(
             children: [
               Expanded(
@@ -497,7 +552,19 @@ class _ViewerScreenState extends State<ViewerScreen> {
                   ],
                 ),
               ),
-              if (_showInfo)
+              if (_showActivity && _activity != null)
+                SizedBox(
+                  width: 360,
+                  child: ActivityPanel(
+                    key: ValueKey('activity${a?.id}'),
+                    state: _activity!,
+                    onClose: () => setState(() {
+                      _showActivity = false;
+                      _focus.requestFocus();
+                    }),
+                  ),
+                )
+              else if (_showInfo)
                 SizedBox(
                   width: 340,
                   child: _editFaces && a != null
@@ -707,7 +774,10 @@ class _ViewerScreenState extends State<ViewerScreen> {
             IconButton(
               tooltip: t('linux_info_key'),
               icon: Icon(_showInfo ? Icons.info : Icons.info_outline),
-              onPressed: () => setState(() => _showInfo = !_showInfo),
+              onPressed: () => setState(() {
+                _showInfo = !_showInfo;
+                _showActivity = false;
+              }),
             ),
           ]),
         ),

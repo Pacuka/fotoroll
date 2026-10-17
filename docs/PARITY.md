@@ -54,7 +54,7 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | Faces: hover a face on the photo (box + name) or a person in the panel, edit faces (reassign, new person, delete), tag a face by drawing a box | ✅ |
 | Editor (crop, rotate, filters) | ⬜ |
 | Slideshow (shuffle / forward / backward, contain / cover / blurred, progress bar, fade, video autoplay, repeat, info overlay, full screen) | ✅ |
-| Activity / comments / likes (shared albums) | ⬜ |
+| Activity / comments / likes (shared albums: on the album and on each photo) | ✅ |
 | Stacks (strip of the stack's photos; set primary, remove, keep this / delete others, unstack) | ✅ |
 | Live / motion photos (badge, hover playback, "Play Motion Photo" in the viewer) | ✅ |
 | 360° / 180° panorama photos (GPano crop, drag / zoom, 360 badge on tiles) and 360° videos (mpv v360) | ✅ |

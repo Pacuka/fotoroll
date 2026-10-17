@@ -9,6 +9,7 @@ import '../api.dart';
 import '../i18n.dart';
 import '../sources.dart';
 import 'slideshow.dart';
+import '../widgets/activity.dart';
 import '../widgets/asset_actions.dart';
 import '../widgets/loader.dart';
 import '../widgets/shared_link_dialog.dart';
@@ -256,6 +257,9 @@ class _AlbumScreenState extends State<AlbumScreen> {
   late Album _album = widget.album;
   late Future<TimelineSource> _source = _load();
   String? _me;
+  /// Comments and likes on the album itself (shared albums only).
+  ActivityState? _activity;
+  bool _showActivity = false;
 
   ImmichApi get api => widget.api;
 
@@ -275,8 +279,33 @@ class _AlbumScreenState extends State<AlbumScreen> {
   Future<void> _refreshAlbum() async {
     try {
       final a = await api.album(_album.id);
-      if (mounted) setState(() => _album = a);
+      if (!mounted) return;
+      _setAlbum(a);
+      _activity?.load().catchError((_) {});
     } catch (_) {}
+  }
+
+  /// The album changed: its comments and likes follow (only while it is shared).
+  void _setAlbum(Album a) {
+    setState(() => _album = a);
+    if (a.albumUsers.isEmpty) {
+      _activity?.dispose();
+      _activity = null;
+      _showActivity = false;
+    } else if (_activity case final act?) {
+      act.album = a;
+    } else {
+      _activity = ActivityState(api, a)
+        ..addListener(() {
+          if (mounted) setState(() {});
+        });
+    }
+  }
+
+  @override
+  void dispose() {
+    _activity?.dispose();
+    super.dispose();
   }
 
   void _reloadAll() {
@@ -330,7 +359,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
     await _guard(() async {
       final a = await api.updateAlbum(_album.id, name: name.text.trim(), description: desc.text.trim());
       if (!mounted) return;
-      setState(() => _album = a);
+      _setAlbum(a);
       _toast(t('album_info_updated'));
     });
   }
@@ -346,7 +375,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
 
   Future<void> _toggleActivity() => _guard(() async {
         final a = await api.updateAlbum(_album.id, isActivityEnabled: !_album.isActivityEnabled);
-        if (mounted) setState(() => _album = a);
+        if (mounted) _setAlbum(a);
       });
 
   Future<void> _delete() async {
@@ -480,7 +509,29 @@ class _AlbumScreenState extends State<AlbumScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      // As the floating button, it moves up for messages instead of hiding under them.
+      floatingActionButton: _activity != null && _activity!.visible && !_showActivity
+          ? ActivityStatusPill(
+              state: _activity!,
+              onComments: () {
+                // Fresh: comments on photos may have come from the viewer meanwhile.
+                _activity!.load().catchError((_) {});
+                setState(() => _showActivity = true);
+              })
+          : null,
+      body: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Expanded(child: _body(a, theme, canEdit, editor, range)),
+        if (_activity case final act? when _showActivity)
+          SizedBox(
+            width: 360,
+            child: ActivityPanel(state: act, onClose: () => setState(() => _showActivity = false)),
+          ),
+      ]),
+    );
+  }
+
+  Widget _body(Album a, ThemeData theme, bool canEdit, bool editor, String? range) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -528,9 +579,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                 : TimelineView(api: api, source: src, albumId: a.id),
           ),
         ),
-      ]),
-    );
-  }
+      ]);
 }
 
 /// Full timeline in picker mode; returns the selected assets.

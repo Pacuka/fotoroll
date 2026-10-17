@@ -125,6 +125,9 @@ class FakeImmich {
      'assets': [assets[1], assets[3]]},
   ];
   final albums = <Map<String, dynamic>>[];
+  /// Comments and likes (ActivityResponseDto + albumId).
+  final activities = <Map<String, dynamic>>[];
+
   /// Stacks by id: {id, primaryAssetId, assetIds}.
   final stacks = <String, Map<String, dynamic>>{};
   /// Puts each asset's `stack` summary ({id, primaryAssetId, assetCount} or null) in place.
@@ -406,6 +409,22 @@ class FakeImmich {
       out = q['assetId'] != null
           ? albums.where((a) => (a['assetIds'] as List).contains(q['assetId'])).map(_album).toList()
           : albums.map(_album).toList();
+    } else if (path == '/api/activities' && m == 'GET') {
+      out = [
+        for (final a in activities)
+          if (a['albumId'] == q['albumId'] && (q['assetId'] == null || a['assetId'] == q['assetId'])) a,
+      ];
+    } else if (path == '/api/activities' && m == 'POST') {
+      final a = {
+        'id': uid(1300 + _nextId++), 'albumId': body['albumId'], 'assetId': body['assetId'], 'type': body['type'],
+        'comment': body['comment'], 'createdAt': DateTime.now().toUtc().toIso8601String(), 'user': me,
+      };
+      activities.add(a);
+      out = a;
+      status = 201;
+    } else if (match(r'/api/activities/([\w-]+)') case final r? when m == 'DELETE') {
+      activities.removeWhere((a) => a['id'] == r[1]);
+      status = 204;
     } else if (path == '/api/stacks' && m == 'POST') {
       // Like Immich: photos already in stacks bring their whole stack along.
       final ids = <String>[];
@@ -472,6 +491,7 @@ class FakeImmich {
         if (body['albumName'] != null) a['albumName'] = body['albumName'];
         if (body['description'] != null) a['description'] = body['description'];
         if (body['order'] != null) a['order'] = body['order'];
+        if (body['isActivityEnabled'] != null) a['isActivityEnabled'] = body['isActivityEnabled'];
         out = _album(a);
       }
     } else if (path == '/api/memories' || path == '/api/memories/statistics') {
@@ -632,7 +652,7 @@ class FakeImmich {
         'id': a['id'], 'albumName': a['albumName'], 'description': a['description'], 'ownerId': a['ownerId'],
         'assetCount': (a['assetIds'] as List).length, 'shared': (a['albumUsers'] as List?)?.isNotEmpty ?? false,
         'albumUsers': a['albumUsers'] ?? [], 'order': a['order'],
-        'isActivityEnabled': false, 'albumThumbnailAssetId': (a['assetIds'] as List).isEmpty ? null : a['assetIds'][0],
+        'isActivityEnabled': a['isActivityEnabled'] ?? false, 'albumThumbnailAssetId': (a['assetIds'] as List).isEmpty ? null : a['assetIds'][0],
         'createdAt': '2026-10-09T00:00:00.000Z', 'updatedAt': '2026-10-09T00:00:00.000Z',
         'startDate': '2026-10-09T00:00:00.000Z', 'endDate': '2026-10-09T00:00:00.000Z', 'hasSharedLink': false,
       };
