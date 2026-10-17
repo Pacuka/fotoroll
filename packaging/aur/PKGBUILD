@@ -1,6 +1,6 @@
 # Maintainer: Pacuka <69674426+Pacuka@users.noreply.github.com>
 pkgname=fotoroll-bin
-pkgver=0.11.0
+pkgver=0.11.1
 pkgrel=1
 pkgdesc="Native Linux desktop client for Immich: browse, back up and manage your photos"
 arch=('x86_64')
@@ -20,7 +20,7 @@ source=("${_appimage}::${url}/releases/download/v${pkgver}/${_appimage}"
         "LICENSE-${pkgver}::https://raw.githubusercontent.com/Pacuka/fotoroll/v${pkgver}/LICENSE"
         'fotoroll.sh')
 noextract=("${_appimage}")
-sha256sums=('475b0ede7c512231e1bdfe0e63813f9b0e3ee72349002b00b25d08b4bd8dbdd5'
+sha256sums=('7b318281004a325909ab97f5068065bfd5787a800998f8df315942bc6dad6065'
             'a3bad629f67f442b23b5224419e49edafc32e6b9c876b89464f7aafe6091ccde'
             'cb8d4f29123293eeb86cb0e42c39ce45453df54e1bb118ccfc9109b9b05c2de4')
 
