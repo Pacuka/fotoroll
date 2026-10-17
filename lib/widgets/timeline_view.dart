@@ -94,12 +94,17 @@ class _TimelineViewState extends State<TimelineView> {
   double _total = 0;
   double _width = -1;
   bool _dirty = true;
+  /// Partners' photos can't be edited: the edit menu needs every selected photo to be ours.
+  String? _myId;
 
   @override
   void initState() {
     super.initState();
     widget.source.addListener(_onSource);
     _selection.addListener(() => setState(() {}));
+    widget.api.myId().then((id) {
+      if (mounted) setState(() => _myId = id);
+    }, onError: (_) {});
   }
 
   @override
@@ -297,6 +302,8 @@ class _TimelineViewState extends State<TimelineView> {
         ),
       ]);
       final selected = _selection.assets;
+      // Unknown owners (or my id not known yet) count as mine; the server has the last word.
+      final allOwned = selected.every((a) => a.ownerId == null || _myId == null || a.ownerId == _myId);
       return CallbackShortcuts(
         bindings: {
           const SingleActivator(LogicalKeyboardKey.escape): _selection.clear,
@@ -323,7 +330,9 @@ class _TimelineViewState extends State<TimelineView> {
                       : actionsFor(widget.mode,
                           allFavorite: selected.every((a) => a.isFavorite),
                           albumId: widget.albumId,
-                          count: selected.length),
+                          count: selected.length,
+                          allOwned: allOwned),
+                  menu: widget.onPicked != null ? const [] : menuActionsFor(widget.mode, allOwned: allOwned),
                   onAction: _run,
                   trailing: widget.onPicked == null
                       ? null

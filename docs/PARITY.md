@@ -66,7 +66,8 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | Multi-select (click, shift range, whole day, Ctrl+A) | ✅ |
 | Favorite, archive, trash, delete permanently, restore, add to album, remove from album, download zip, locked folder | ✅ |
 | Share link | ✅ |
-| Change date / location, stack, tag | ⬜ |
+| Change date (fixed or by offset), description, location, tag (own photos only, like the web) | ✅ |
+| Stack | ⬜ |
 
 ## Account settings (web `/user-settings`)
 | Section | Status |

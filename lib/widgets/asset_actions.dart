@@ -4,11 +4,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:path/path.dart' as p;
 
 import '../api.dart';
 import '../i18n.dart';
 import '../sources.dart';
+import 'bulk_edit.dart';
+import 'info_panel.dart' show LocationDialog, TagPicker;
 import 'shared_link_dialog.dart';
 import '../host.dart';
 
@@ -29,7 +32,11 @@ enum AssetAction {
   unlock('remove_from_locked_folder', Icons.lock_open_outlined),
   trash('delete', Icons.delete_outline),
   restore('restore', Icons.restore_from_trash_outlined),
-  deleteForever('permanently_delete', Icons.delete_forever_outlined);
+  deleteForever('permanently_delete', Icons.delete_forever_outlined),
+  changeDate('change_date', Icons.edit_calendar_outlined),
+  changeDescription('change_description', Icons.notes),
+  changeLocation('change_location', Icons.edit_location_alt_outlined),
+  tag('tag', Icons.sell_outlined);
 
   final String labelKey;
   final IconData icon;
@@ -38,8 +45,12 @@ enum AssetAction {
 }
 
 List<AssetAction> actionsFor(TimelineMode mode,
-    {required bool allFavorite, String? albumId, int count = 0}) {
+    {required bool allFavorite, String? albumId, int count = 0, bool allOwned = true}) {
   final fav = allFavorite ? AssetAction.unfavorite : AssetAction.favorite;
+  // A partner's photos (web: !isAllUserOwned): only what doesn't change them.
+  if (!allOwned && albumId == null && (mode == TimelineMode.normal || mode == TimelineMode.archive)) {
+    return const [AssetAction.share, AssetAction.addToAlbum, AssetAction.download];
+  }
   return switch (mode) {
     TimelineMode.normal => [
         AssetAction.share,
@@ -65,6 +76,12 @@ List<AssetAction> actionsFor(TimelineMode mode,
     TimelineMode.readOnly => [AssetAction.download],
   };
 }
+
+/// The selection bar's menu (web: the "⋮" menu, only when every photo is the user's own).
+List<AssetAction> menuActionsFor(TimelineMode mode, {required bool allOwned}) =>
+    allOwned && (mode == TimelineMode.normal || mode == TimelineMode.archive)
+        ? const [AssetAction.changeDate, AssetAction.changeDescription, AssetAction.changeLocation, AssetAction.tag]
+        : const [];
 
 class AssetSelection extends ChangeNotifier {
   final Map<String, AssetRef> _selected = {};
@@ -197,6 +214,32 @@ Future<bool> performAction(
         // Web: "Create link to share" (an individual shared link for the picked photos).
         if (!context.mounted) return false;
         return await showSharedLinkDialog(context, api, assetIds: ids) != null;
+      case AssetAction.changeDate:
+        if (!context.mounted) return false;
+        final change = await showChangeDateDialog(context, initial: assets.first.localDate);
+        if (change == null) return false;
+        await api.updateAssets(ids, dateTimeOriginal: change.iso, dateTimeRelative: change.minutes);
+        libraryChanged.value++; // the photos move to their new day
+        say(t('linux_updated_count', {'count': n}));
+      case AssetAction.changeDescription:
+        if (!context.mounted) return false;
+        final text = await showChangeDescriptionDialog(context);
+        if (text == null) return false;
+        await api.updateAssets(ids, description: text);
+        say(t('linux_updated_count', {'count': n}));
+      case AssetAction.changeLocation:
+        if (!context.mounted) return false;
+        final point = await showDialog<LatLng>(context: context, builder: (_) => const LocationDialog());
+        if (point == null) return false;
+        await api.updateAssets(ids, latitude: point.latitude, longitude: point.longitude);
+        say(t('linux_updated_count', {'count': n}));
+      case AssetAction.tag:
+        if (!context.mounted) return false;
+        final name = await showDialog<String>(context: context, builder: (_) => TagPicker(api: api));
+        if (name == null || name.trim().isEmpty) return false;
+        final tags = await api.upsertTags([name.trim()]);
+        await api.tagAssets([for (final t in tags) t['id'] as String], ids);
+        say(t('tagged_assets', {'count': n}));
       case AssetAction.addToAlbum:
         if (!context.mounted) return false;
         final msg = await showDialog<String>(
@@ -348,6 +391,8 @@ class _AddToAlbumDialogState extends State<_AddToAlbumDialog> {
 class SelectionBar extends StatelessWidget {
   final AssetSelection selection;
   final List<AssetAction> actions;
+  /// Behind the "⋮" button.
+  final List<AssetAction> menu;
   final void Function(AssetAction) onAction;
   final Widget? trailing;
 
@@ -355,6 +400,7 @@ class SelectionBar extends StatelessWidget {
     super.key,
     required this.selection,
     required this.actions,
+    this.menu = const [],
     required this.onAction,
     this.trailing,
   });
@@ -385,6 +431,18 @@ class SelectionBar extends StatelessWidget {
                       ? scheme.error
                       : null),
               onPressed: () => onAction(a),
+            ),
+          if (menu.isNotEmpty)
+            MenuAnchor(
+              menuChildren: [
+                for (final a in menu)
+                  MenuItemButton(leadingIcon: Icon(a.icon), onPressed: () => onAction(a), child: Text(a.label)),
+              ],
+              builder: (context, ctl, _) => IconButton(
+                tooltip: t('menu'),
+                icon: const Icon(Icons.more_vert),
+                onPressed: () => ctl.isOpen ? ctl.close() : ctl.open(),
+              ),
             ),
           ?trailing,
         ]),

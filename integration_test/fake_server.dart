@@ -125,6 +125,8 @@ class FakeImmich {
      'assets': [assets[1], assets[3]]},
   ];
   final albums = <Map<String, dynamic>>[];
+  /// Bodies of PUT /assets (bulk edits).
+  final bulkUpdates = <Map<String, dynamic>>[];
   /// Shared links as POST /shared-links got them (plus id and key).
   final sharedLinks = <Map<String, dynamic>>[];
   /// API keys; `secret` is what a client sends in x-api-key.
@@ -275,7 +277,8 @@ class FakeImmich {
       final n = _visible(q).length;
       out = n == 0 ? [] : [{'timeBucket': '2026-10-01', 'count': n}];
     } else if (path == '/api/timeline/bucket') {
-      final v = _visible(q);
+      // Newest first, like Immich (dates can change in tests).
+      final v = _visible(q)..sort((x, y) => '${y['fileCreatedAt']}'.compareTo('${x['fileCreatedAt']}'));
       out = {
         'id': [for (final a in v) a['id']],
         'isImage': [for (final a in v) a['type'] == 'IMAGE'],
@@ -286,6 +289,7 @@ class FakeImmich {
         'localOffsetHours': [for (final _ in v) 0],
         'projectionType': [for (final a in v) (a['exifInfo'] as Map)['projectionType']],
         'livePhotoVideoId': [for (final a in v) a['livePhotoVideoId']],
+        'ownerId': [for (final a in v) a['ownerId']],
       };
     } else if (match(r'/api/assets/([\w-]+)') != null && m == 'GET') {
       out = asset(match(r'/api/assets/([\w-]+)')![1]!);
@@ -304,10 +308,22 @@ class FakeImmich {
       status = 201;
       out = {'id': uid(_nextId++), 'status': 'created'};
     } else if (path == '/api/assets' && m == 'PUT') {
+      bulkUpdates.add(body as Map<String, dynamic>);
       for (final id in body['ids']) {
         final a = asset(id);
+        final exif = a['exifInfo'] as Map<String, dynamic>;
         if (body.containsKey('isFavorite')) a['isFavorite'] = body['isFavorite'];
         if (body.containsKey('visibility')) a['visibility'] = body['visibility'];
+        for (final k in ['description', 'latitude', 'longitude']) {
+          if (body.containsKey(k)) exif[k] = body[k];
+        }
+        if (body['dateTimeOriginal'] case final String d) {
+          a['fileCreatedAt'] = DateTime.parse(d).toUtc().toIso8601String();
+        }
+        if (body['dateTimeRelative'] case final int minutes) {
+          a['fileCreatedAt'] =
+              DateTime.parse(a['fileCreatedAt']).add(Duration(minutes: minutes)).toUtc().toIso8601String();
+        }
       }
       status = 204;
     } else if (path == '/api/assets' && m == 'DELETE') {

@@ -138,7 +138,7 @@ class _InfoPanelState extends State<InfoPanel> {
     final lon = (_exif['longitude'] as num?)?.toDouble();
     final picked = await showDialog<LatLng>(
       context: context,
-      builder: (_) => _LocationDialog(initial: lat != null && lon != null ? LatLng(lat, lon) : null),
+      builder: (_) => LocationDialog(initial: lat != null && lon != null ? LatLng(lat, lon) : null),
     );
     widget.onEditingDone?.call();
     if (picked == null) return;
@@ -151,7 +151,7 @@ class _InfoPanelState extends State<InfoPanel> {
   }
 
   Future<void> _addTag() async {
-    final picked = await showDialog<String>(context: context, builder: (_) => _TagPicker(api: api));
+    final picked = await showDialog<String>(context: context, builder: (_) => TagPicker(api: api));
     widget.onEditingDone?.call();
     if (picked == null || picked.trim().isEmpty) return;
     await _apply((id) async {
@@ -340,15 +340,15 @@ class _InfoPanelState extends State<InfoPanel> {
 }
 
 /// Pick a point on an OpenStreetMap map (web: change location modal).
-class _LocationDialog extends StatefulWidget {
+class LocationDialog extends StatefulWidget {
   final LatLng? initial;
-  const _LocationDialog({this.initial});
+  const LocationDialog({super.key, this.initial});
 
   @override
-  State<_LocationDialog> createState() => _LocationDialogState();
+  State<LocationDialog> createState() => _LocationDialogState();
 }
 
-class _LocationDialogState extends State<_LocationDialog> {
+class _LocationDialogState extends State<LocationDialog> {
   late LatLng? _point = widget.initial;
   late final _lat = TextEditingController(text: widget.initial?.latitude.toStringAsFixed(6) ?? '');
   late final _lon = TextEditingController(text: widget.initial?.longitude.toStringAsFixed(6) ?? '');
@@ -438,15 +438,15 @@ class _LocationDialogState extends State<_LocationDialog> {
 }
 
 /// Choose an existing tag or type a new one (slashes make nested tags, like the web).
-class _TagPicker extends StatefulWidget {
+class TagPicker extends StatefulWidget {
   final ImmichApi api;
-  const _TagPicker({required this.api});
+  const TagPicker({super.key, required this.api});
 
   @override
-  State<_TagPicker> createState() => _TagPickerState();
+  State<TagPicker> createState() => _TagPickerState();
 }
 
-class _TagPickerState extends State<_TagPicker> {
+class _TagPickerState extends State<TagPicker> {
   late final Future<List<Map<String, dynamic>>> _tags = widget.api.tags();
   final _ctl = TextEditingController();
 

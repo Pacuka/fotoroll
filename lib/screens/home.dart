@@ -112,6 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _trayActions?.cancel();
     _drops?.cancel();
     settings.removeListener(_applyDesktopSettings);
+    libraryChanged.removeListener(_refresh);
     i18n.removeListener(_setupTray);
     _backup.then((s) => s.dispose()).catchError((_) {});
     _searchCtl.dispose();
@@ -133,6 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _applyDesktopSettings();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkMenuEntry());
     settings.addListener(_applyDesktopSettings);
+    libraryChanged.addListener(_refresh);
     i18n.addListener(_setupTray); // menu labels follow the language
   }
 

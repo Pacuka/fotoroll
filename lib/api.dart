@@ -55,6 +55,8 @@ class AssetRef {
   final bool isPanorama;
   /// The short video of a live / motion photo.
   final String? livePhotoVideoId;
+  /// Null when the server didn't say (then it counts as the user's own).
+  final String? ownerId;
 
   const AssetRef({
     required this.id,
@@ -65,6 +67,7 @@ class AssetRef {
     this.localDate,
     this.isPanorama = false,
     this.livePhotoVideoId,
+    this.ownerId,
   });
 
   AssetRef copyWith({bool? isFavorite}) => AssetRef(
@@ -76,6 +79,7 @@ class AssetRef {
         localDate: localDate,
         isPanorama: isPanorama,
         livePhotoVideoId: livePhotoVideoId,
+        ownerId: ownerId,
       );
 
   /// Web: projectionType EQUIRECTANGULAR, or an Insta360 .insp file.
@@ -94,6 +98,7 @@ class AssetRef {
       localDate: DateTime.tryParse(j['localDateTime'] ?? ''),
       isPanorama: panoramaFrom(j['exifInfo']?['projectionType'] as String?, j['originalPath'] as String?),
       livePhotoVideoId: j['type'] == 'IMAGE' ? j['livePhotoVideoId'] as String? : null,
+      ownerId: j['ownerId'] as String?,
     );
   }
 }
@@ -599,11 +604,24 @@ class ImmichApi {
 
   // ---- Editing (web: asset-utils / trash / album actions) ----
 
-  Future<void> updateAssets(List<String> ids, {bool? isFavorite, String? visibility}) =>
+  /// [dateTimeOriginal]: ISO with offset; [dateTimeRelative]: shift in minutes.
+  Future<void> updateAssets(List<String> ids,
+          {bool? isFavorite,
+          String? visibility,
+          String? dateTimeOriginal,
+          int? dateTimeRelative,
+          String? description,
+          double? latitude,
+          double? longitude}) =>
       _sendJson('PUT', '/assets', {
         'ids': ids,
         'isFavorite': ?isFavorite,
         'visibility': ?visibility,
+        'dateTimeOriginal': ?dateTimeOriginal,
+        'dateTimeRelative': ?dateTimeRelative,
+        'description': ?description,
+        'latitude': ?latitude,
+        'longitude': ?longitude,
       });
 
   /// Moves to the bin, or deletes permanently with [force].
@@ -1104,6 +1122,13 @@ class ImmichApi {
 
   Future<Map<String, dynamic>> me() async => await _getJson('/users/me');
 
+  Future<String>? _myId;
+  /// The signed-in user's id, asked once.
+  Future<String> myId() => _myId ??= me().then((m) => m['id'] as String, onError: (Object e) {
+        _myId = null; // ask again next time
+        throw e;
+      });
+
   Future<void> logout() async {
     if (creds.accessToken == null) return;
     try {
@@ -1131,6 +1156,7 @@ class ImmichApi {
     final offset = (j['localOffsetHours'] as List?) ?? const [];
     final projection = (j['projectionType'] as List?) ?? const [];
     final live = (j['livePhotoVideoId'] as List?) ?? const [];
+    final owner = (j['ownerId'] as List?) ?? const [];
     DateTime? local(int i) {
       if (i >= created.length) return null;
       final utc = DateTime.tryParse('${created[i]}')?.toUtc();
@@ -1151,6 +1177,7 @@ class ImmichApi {
           localDate: local(i),
           isPanorama: i < projection.length && AssetRef.panoramaFrom(projection[i] as String?),
           livePhotoVideoId: isImage[i] == true && i < live.length ? live[i] as String? : null,
+          ownerId: i < owner.length ? owner[i] as String? : null,
         ),
     ];
   }

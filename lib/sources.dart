@@ -6,6 +6,10 @@ import 'package:intl/intl.dart';
 import 'api.dart';
 import 'i18n.dart';
 
+/// Bumped after edits that move photos around (e.g. a new date): the home screen
+/// then reloads its pages, like its refresh button.
+final libraryChanged = ValueNotifier<int>(0);
+
 abstract class AssetSource extends ChangeNotifier {
   bool _disposed = false;
 
