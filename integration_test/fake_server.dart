@@ -125,6 +125,8 @@ class FakeImmich {
      'assets': [assets[1], assets[3]]},
   ];
   final albums = <Map<String, dynamic>>[];
+  /// Shared links as POST /shared-links got them (plus id and key).
+  final sharedLinks = <Map<String, dynamic>>[];
   /// API keys; `secret` is what a client sends in x-api-key.
   final apiKeys = <Map<String, dynamic>>[];
   /// Reject requests whose x-api-key isn't a secret in [apiKeys] (off: any key works).
@@ -360,6 +362,14 @@ class FakeImmich {
       out = q['assetId'] != null
           ? albums.where((a) => (a['assetIds'] as List).contains(q['assetId'])).map(_album).toList()
           : albums.map(_album).toList();
+    } else if (path == '/api/shared-links' && m == 'GET') {
+      out = sharedLinks;
+    } else if (path == '/api/shared-links' && m == 'POST') {
+      final n = sharedLinks.length;
+      final link = {...body as Map<String, dynamic>, 'id': uid(1100 + n), 'key': 'key$n'};
+      sharedLinks.add(link);
+      out = link;
+      status = 201;
     } else if (path == '/api/albums' && m == 'POST') {
       final a = {
         'id': uid(700 + albums.length), 'albumName': body['albumName'], 'description': '',
@@ -518,7 +528,7 @@ class FakeImmich {
     } else if (path == '/api/view/folder') {
       out = assets.take(4).toList();
     } else if (path == '/api/partners' || path == '/api/sessions' ||
-        path == '/api/libraries' || path == '/api/duplicates' || path == '/api/shared-links') {
+        path == '/api/libraries' || path == '/api/duplicates') {
       out = [];
     } else if (path == '/api/auth/status') {
       out = {'pinCode': false, 'password': true, 'isElevated': false};

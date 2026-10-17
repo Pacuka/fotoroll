@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import '../api.dart';
 import '../i18n.dart';
 import '../sources.dart';
+import 'shared_link_dialog.dart';
 
 /// Which actions a timeline offers.
 enum TimelineMode { normal, archive, trash, locked, readOnly }
@@ -16,6 +17,7 @@ enum TimelineMode { normal, archive, trash, locked, readOnly }
 enum AssetAction {
   favorite('to_favorite', Icons.favorite_border),
   unfavorite('unfavorite', Icons.favorite),
+  share('share', Icons.share_outlined),
   addToAlbum('add_to_album', Icons.library_add_outlined),
   removeFromAlbum('remove_from_album', Icons.playlist_remove),
   setAlbumCover('set_as_album_cover', Icons.image_outlined),
@@ -39,6 +41,7 @@ List<AssetAction> actionsFor(TimelineMode mode,
   final fav = allFavorite ? AssetAction.unfavorite : AssetAction.favorite;
   return switch (mode) {
     TimelineMode.normal => [
+        AssetAction.share,
         fav,
         AssetAction.addToAlbum,
         if (albumId != null) AssetAction.removeFromAlbum,
@@ -49,6 +52,7 @@ List<AssetAction> actionsFor(TimelineMode mode,
         AssetAction.trash,
       ],
     TimelineMode.archive => [
+        AssetAction.share,
         fav,
         AssetAction.addToAlbum,
         AssetAction.download,
@@ -188,6 +192,10 @@ Future<bool> performAction(
         await api.removeFromAlbum(albumId!, ids);
         source.removeAssets(idSet);
         say(t('linux_removed_from_album_count', {'count': n}));
+      case AssetAction.share:
+        // Web: "Create link to share" (an individual shared link for the picked photos).
+        if (!context.mounted) return false;
+        return await showSharedLinkDialog(context, api, assetIds: ids) != null;
       case AssetAction.addToAlbum:
         if (!context.mounted) return false;
         final msg = await showDialog<String>(

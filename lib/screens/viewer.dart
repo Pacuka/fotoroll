@@ -257,6 +257,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
         final albums = await api.albumsOf(a.id).catchError((_) => <Album>[]);
         if (mounted) setState(() => _albums = albums);
       case AssetAction.download:
+      case AssetAction.share:
         break;
       default:
         // The asset left this list: show the next one, or close when empty.
@@ -591,6 +592,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
           a.isFavorite
               ? btn(AssetAction.unfavorite, 'F', icon: Icons.favorite, color: Colors.redAccent)
               : btn(AssetAction.favorite, 'F'),
+          btn(AssetAction.share, ''),
           btn(AssetAction.addToAlbum, ''),
           if (widget.albumId != null) btn(AssetAction.removeFromAlbum, ''),
           widget.mode == TimelineMode.archive

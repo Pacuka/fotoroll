@@ -58,14 +58,15 @@ translations come from v3.3.3. User-facing features still to do, in planned orde
 | Stacks | ⬜ |
 | Live / motion photos (badge, hover playback, "Play Motion Photo" in the viewer) | ✅ |
 | 360° / 180° panorama photos (GPano crop, drag / zoom, 360 badge on tiles) and 360° videos (mpv v360) | ✅ |
-| Share (shared link) | ⬜ |
+| Share (shared link) | ✅ |
 
 ## Selection & bulk actions
 | Feature | Status |
 |---|---|
 | Multi-select (click, shift range, whole day, Ctrl+A) | ✅ |
 | Favorite, archive, trash, delete permanently, restore, add to album, remove from album, download zip, locked folder | ✅ |
-| Change date / location, stack, tag, share link | ⬜ |
+| Share link | ✅ |
+| Change date / location, stack, tag | ⬜ |
 
 ## Account settings (web `/user-settings`)
 | Section | Status |
