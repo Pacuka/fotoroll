@@ -10,7 +10,8 @@ depends=('alsa-lib' 'e2fsprogs' 'expat' 'fontconfig' 'freetype2' 'fribidi' 'gcc-
          'harfbuzz' 'hicolor-icon-theme' 'libdrm' 'libglvnd' 'libgpg-error' 'libusb' 'libx11' 'libxcb'
          'mesa' 'ttf-font' 'wayland' 'zlib')
 optdepends=('libayatana-appindicator: system tray icon'
-            'gnome-keyring: keeps the login (or another Secret Service provider such as KWallet or KeePassXC)')
+            'gnome-keyring: keeps the login (or another Secret Service provider such as KWallet or KeePassXC)'
+            'xdg-utils: "Open folder" after a download')
 provides=('fotoroll')
 conflicts=('fotoroll')
 # Flutter's AOT snapshot (libapp.so) breaks when stripped.

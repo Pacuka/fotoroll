@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
 import 'window.dart' show appId, desktopExecArg;
+import 'host.dart';
 
 /// Path of the running AppImage file (set by the AppImage runtime), or null.
 String? get appImagePath => Platform.environment['APPIMAGE'];
@@ -60,7 +61,7 @@ Future<void> installMenuEntry() async {
     ['gtk-update-icon-cache', '-q', '-t', p.join(_dataHome(), 'icons', 'hicolor')],
   ]) {
     try {
-      await Process.run(cmd.first, cmd.sublist(1));
+      await runHost(cmd.first, cmd.sublist(1));
     } catch (_) {}
   }
 }

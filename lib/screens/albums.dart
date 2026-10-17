@@ -1,6 +1,5 @@
 // Albums (web: /albums and /albums/[id]): list with search/filter/sort and
 // create; album page with add photos, share, download, edit, order, comments, delete.
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -14,6 +13,7 @@ import '../widgets/asset_actions.dart';
 import '../widgets/loader.dart';
 import '../widgets/shared_link_dialog.dart';
 import '../widgets/timeline_view.dart';
+import '../host.dart';
 
 enum _Filter { all, owned, shared }
 
@@ -389,7 +389,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(t('linux_saved_to', {'files': files.map((f) => p.basename(f.path)).join(', ')})),
-          action: SnackBarAction(label: t('linux_open_folder'), onPressed: () => Process.run('xdg-open', [dir.path])),
+          action: SnackBarAction(label: t('linux_open_folder'), onPressed: () => runHost('xdg-open', [dir.path])),
         ));
       });
 

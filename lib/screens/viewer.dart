@@ -16,6 +16,7 @@ import '../widgets/faces.dart';
 import '../widgets/panorama_viewer.dart';
 import '../widgets/asset_actions.dart';
 import '../widgets/info_panel.dart';
+import '../host.dart';
 
 class ViewerScreen extends StatefulWidget {
   final ImmichApi api;
@@ -290,7 +291,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
         content: Text(t('linux_saved_to', {'files': target.path})),
         action: SnackBarAction(
           label: t('linux_open_folder'),
-          onPressed: () => Process.run('xdg-open', [dir.path]),
+          onPressed: () => runHost('xdg-open', [dir.path]),
         ),
       ));
     } catch (e) {

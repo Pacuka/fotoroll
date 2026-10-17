@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fotoroll/desktop_integration.dart';
+import 'package:fotoroll/host.dart';
 import 'package:fotoroll/widgets/upload_dialog.dart';
 import 'package:fotoroll/window.dart';
 import 'package:path/path.dart' as p;
@@ -38,6 +39,20 @@ void main() {
     expect(launchCommand({'FOTOROLL_LAUNCHER': '/usr/bin/fotoroll'}, bin), '/usr/bin/fotoroll');
     expect(launchCommand({'APPIMAGE': '/home/x/Fotoroll.AppImage', 'FOTOROLL_LAUNCHER': '/usr/bin/fotoroll'}, bin),
         '/home/x/Fotoroll.AppImage');
+  });
+
+  test("other programs don't get the AppImage's bundled libraries", () {
+    const exe = '/tmp/.mount_Foto/usr/bin/fotoroll';
+    final env = hostEnvironment({
+      'HOME': '/home/x',
+      'LD_LIBRARY_PATH': '/tmp/.mount_Foto/usr/lib:/opt/mine/lib',
+      'LIBMPV_LIBRARY_PATH': '/tmp/.mount_Foto/usr/lib/libmpv.so.1',
+      'GDK_PIXBUF_MODULE_FILE': '/run/user/1000/fotoroll-pixbuf-loaders.cache',
+    }, exe);
+    expect(env, {'HOME': '/home/x', 'LD_LIBRARY_PATH': '/opt/mine/lib'});
+    expect(hostEnvironment({'LD_LIBRARY_PATH': '/tmp/.mount_Foto/usr/lib'}, exe), isEmpty);
+    // The user's own pixbuf cache stays.
+    expect(hostEnvironment({'GDK_PIXBUF_MODULE_FILE': '/etc/loaders.cache'}, exe), {'GDK_PIXBUF_MODULE_FILE': '/etc/loaders.cache'});
   });
 
   test('Exec quoting follows the Desktop Entry spec', () {

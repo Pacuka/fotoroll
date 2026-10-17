@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 
 import 'api.dart';
 import 'app_dirs.dart';
+import 'host.dart';
 
 class SessionStore {
   static const _key = 'immich_credentials';
@@ -41,7 +42,7 @@ class SessionStore {
     await f.parent.create(recursive: true);
     // Restrict permissions before any secret is written; never write it if that fails.
     await f.writeAsString('');
-    final chmod = await Process.run('chmod', ['600', f.path]);
+    final chmod = await runHost('chmod', ['600', f.path]);
     if (chmod.exitCode != 0) {
       await f.delete();
       throw const FileSystemException('Could not protect the credentials file');

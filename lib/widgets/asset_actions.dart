@@ -10,6 +10,7 @@ import '../api.dart';
 import '../i18n.dart';
 import '../sources.dart';
 import 'shared_link_dialog.dart';
+import '../host.dart';
 
 /// Which actions a timeline offers.
 enum TimelineMode { normal, archive, trash, locked, readOnly }
@@ -99,7 +100,7 @@ class AssetSelection extends ChangeNotifier {
 
 Future<Directory> downloadsDir() async {
   try {
-    final r = await Process.run('xdg-user-dir', ['DOWNLOAD']);
+    final r = await runHost('xdg-user-dir', ['DOWNLOAD']);
     final path = (r.stdout as String).trim();
     if (r.exitCode == 0 && path.isNotEmpty) return Directory(path);
   } catch (_) {}
@@ -214,7 +215,7 @@ Future<bool> performAction(
           content: Text(t('linux_saved_to', {'files': files.map((f) => p.basename(f.path)).join(', ')})),
           action: SnackBarAction(
             label: t('linux_open_folder'),
-            onPressed: () => Process.run('xdg-open', [dir.path]),
+            onPressed: () => runHost('xdg-open', [dir.path]),
           ),
         ));
     }
