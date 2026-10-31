@@ -1,11 +1,11 @@
-# Feature parity with the official Immich clients (v3.3.3)
+# Feature parity with the official Immich clients (v3.3.5)
 
-Source of truth: `immich-app/immich@v3.1.0`, plus the v3.3.3 delta below (web routes in `web/src/routes`, mobile pages in
+Source of truth: `immich-app/immich@v3.1.0`, plus the v3.3.5 delta below (web routes in `web/src/routes`, mobile pages in
 `mobile/lib/**/pages`). ✅ done · 🟡 partial · ⬜ todo · ➖ not applicable on desktop
 
-## New in Immich v3.2 – v3.3.3 (catch-up list)
+## New in Immich v3.2 – v3.3.5 (catch-up list)
 Endpoint moves are done (`/config`, `/admin/config`, `POST /people/merge`, with v3.1 fallback) and the
-translations come from v3.3.3. User-facing features still to do, in planned order:
+translations come from v3.3.5. User-facing features still to do, in planned order:
 
 | Feature | Web source | Status |
 |---|---|---|

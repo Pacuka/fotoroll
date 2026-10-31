@@ -1,4 +1,4 @@
-// In-memory Immich v3.3.3 stand-in for integration tests: serves a small
+// In-memory Immich v3.3.5 stand-in for integration tests: serves a small
 // library (photos + videos), records edits, and supports the endpoints the app uses.
 import 'dart:convert';
 import 'dart:io';
@@ -161,7 +161,7 @@ class FakeImmich {
   /// Behave like Immich v3.1: no POST /api-keys/:id/rotate, tag updates ignore `name`.
   bool v31 = false;
   /// What GET /server/version reports (v31 makes it 3.1.0).
-  List<int> version = [3, 3, 3];
+  List<int> version = [3, 3, 5];
 
   int get port => _server.port;
   String get url => 'http://127.0.0.1:$port';
