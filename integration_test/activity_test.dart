@@ -146,8 +146,15 @@ void main() {
     final viewerPill = find.descendant(of: find.byType(ViewerScreen), matching: find.byType(ActivityStatusPill));
     await waitFor(viewerPill);
     if (first == uid(1)) expect(find.descendant(of: viewerPill, matching: find.text('1')), findsOneWidget);
-    await tap(find.descendant(of: viewerPill, matching: find.byTooltip('Comments & likes')));
     final field = find.widgetWithText(TextField, 'Say something');
+    // On a slow CI machine the first tap can land while the viewer is still sliding in; tap again then.
+    for (var i = 0; i < 5 && field.evaluate().isEmpty; i++) {
+      await tap(find.descendant(of: viewerPill, matching: find.byTooltip('Comments & likes')));
+      final end = DateTime.now().add(const Duration(seconds: 3));
+      while (field.evaluate().isEmpty && DateTime.now().isBefore(end)) {
+        await wait(const Duration(milliseconds: 100));
+      }
+    }
     await waitFor(field);
     // Keys typed into the comment field must not reach the viewer's shortcuts (F = favorite, I = info).
     await tester.tap(field);
