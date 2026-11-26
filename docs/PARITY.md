@@ -1,11 +1,21 @@
-# Feature parity with the official Immich clients (v3.3.5)
+# Feature parity with the official Immich clients (v3.4.2)
 
-Source of truth: `immich-app/immich@v3.1.0`, plus the v3.3.5 delta below (web routes in `web/src/routes`, mobile pages in
+Source of truth: `immich-app/immich@v3.1.0`, plus the v3.2 – v3.4.2 deltas below (web routes in `web/src/routes`, mobile pages in
 `mobile/lib/**/pages`). ✅ done · 🟡 partial · ⬜ todo · ➖ not applicable on desktop
+
+## New in Immich v3.4.0 – v3.4.2 (catch-up list)
+| Feature | Web source | Status |
+|---|---|---|
+| "user_liked" text: `image` / `video` / `other` type | `ActivityViewer.svelte` | ✅ |
+| Shortcut F: favorite / unfavorite the selection | `TimelineKeyboardActions.svelte` | ⬜ |
+| Person page shortcuts: E edit, F favorite, H hide / show, M merge; hidden/favorite indicator on the header avatar | `person.service.ts`, `people/[personId]` | ⬜ |
+| Passkeys in account settings: list, rename, delete (registering a new one and passkey login need WebAuthn, which a native Linux app can't do → use the web) | `UserPasskeyList.svelte` | ⬜ |
+| Server feature level (`featureLevel` in `/server/version`; 2 = passkeys) | `server.service.ts` | ⬜ |
+| Maintenance: restore from a database backup / FUTO Backups; admin passkey settings; workflow OCR trigger; JPEG XL thumbnails | admin | ➖ server settings stay in the web (same as before) |
 
 ## New in Immich v3.2 – v3.3.5 (catch-up list)
 Endpoint moves are done (`/config`, `/admin/config`, `POST /people/merge`, with v3.1 fallback) and the
-translations come from v3.3.5. User-facing features still to do, in planned order:
+translations come from v3.4.2. User-facing features still to do, in planned order:
 
 | Feature | Web source | Status |
 |---|---|---|

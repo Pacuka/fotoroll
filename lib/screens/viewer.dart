@@ -113,7 +113,7 @@ class _ViewerScreenState extends State<ViewerScreen> {
     _activity = null;
     final al = _album;
     if (al == null || al.albumUsers.isEmpty) return;
-    final act = ActivityState(api, al, assetId: a.id);
+    final act = ActivityState(api, al, assetId: a.id, isVideo: !a.isImage);
     act.addListener(() {
       if (mounted) setState(() {});
     });

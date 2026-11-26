@@ -13,7 +13,9 @@ class ActivityState extends ChangeNotifier {
   /// Replaced when the album changes (e.g. comments switched off).
   Album album;
   final String? assetId;
-  ActivityState(this.api, this.album, {this.assetId});
+  /// Whether [assetId] is a video ("liked this video"); null when unknown.
+  final bool? isVideo;
+  ActivityState(this.api, this.album, {this.assetId, this.isVideo});
 
   List<Map<String, dynamic>> items = const [];
   bool loaded = false;
@@ -149,6 +151,14 @@ class _ActivityPanelState extends State<ActivityPanel> {
     });
   }
 
+  /// The `type` of "user_liked" (Immich v3.4: image / video / other); like the
+  /// web, the album's own panel says just "liked this".
+  String get _likedType => switch (state.assetId == null ? null : state.isVideo) {
+        true => 'video',
+        false => 'image',
+        null => 'other',
+      };
+
   Widget _item(BuildContext context, Map<String, dynamic> a) {
     final theme = Theme.of(context);
     final user = (a['user'] as Map?)?.cast<String, dynamic>() ?? const {};
@@ -162,7 +172,7 @@ class _ActivityPanelState extends State<ActivityPanel> {
       leading: isLike
           ? Icon(Icons.thumb_up, color: theme.colorScheme.primary)
           : UserAvatar(api: state.api, user: user, radius: 16),
-      title: Text(isLike ? t('user_liked', {'user': user['name'] ?? '', 'type': photo == null && state.assetId == null ? 'other' : 'photo'}) : '${a['comment'] ?? ''}'),
+      title: Text(isLike ? t('user_liked', {'user': user['name'] ?? '', 'type': _likedType}) : '${a['comment'] ?? ''}'),
       subtitle: Text([
         if (!isLike) user['name'] ?? '',
         if (when != null) DateFormat.yMMMd(i18n.dateLocale).add_Hm().format(when),
