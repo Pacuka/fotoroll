@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fotoroll/api.dart';
 import 'package:fotoroll/i18n.dart';
@@ -168,6 +169,34 @@ void main() {
     await tap(find.text('Save'));
     await until(() => server.personUpdates.length == 2, 'second update');
     expect(server.personUpdates.last.containsKey('userId'), isFalse);
+
+    // 6. Person page shortcuts (web v3.4): F favorite, H hide, E edit, M merge.
+    Future<void> press(LogicalKeyboardKey k) async {
+      focusView(tester);
+      await tester.sendKeyEvent(k);
+      await wait(const Duration(milliseconds: 300));
+    }
+    await press(LogicalKeyboardKey.keyF);
+    await until(() => server.personUpdates.length == 3 && server.personUpdates.last['isFavorite'] == true, 'F favorite');
+    await waitFor(find.byTooltip('Remove from favorites'));
+    await press(LogicalKeyboardKey.keyH);
+    await until(() => server.personUpdates.length == 4 && server.personUpdates.last['isHidden'] == true, 'H hide');
+    await waitFor(find.byTooltip('Unhide person'));
+    await shot('person_shortcuts');
+    await press(LogicalKeyboardKey.keyE);
+    await waitFor(find.text('Only change for me'));
+    // Typing in the dialog is text, not shortcuts.
+    await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Emma F');
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
+    await wait(const Duration(milliseconds: 300));
+    expect(server.personUpdates.length, 4);
+    await tap(find.text('Cancel'));
+    await gone(find.text('Only change for me'));
+    await press(LogicalKeyboardKey.keyM);
+    await waitFor(find.byType(AlertDialog));
+    await shot('person_merge_shortcut');
+    await tap(find.text('Cancel'));
+    expect(server.personUpdates.length, 4);
 
     expect(errors, isEmpty);
     FlutterError.onError = previous;

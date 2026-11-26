@@ -1,5 +1,6 @@
 // Explore page modeled on the web client's /explore, /people and /places routes.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../api.dart';
@@ -635,6 +636,9 @@ class _PersonScreenState extends State<PersonScreen> {
     }, t('saved'));
   }
 
+  Future<void> _toggleFavorite() => _update(() => api.updatePerson(_person.id, isFavorite: !_person.isFavorite));
+  Future<void> _toggleHidden() => _update(() => api.updatePerson(_person.id, isHidden: !_person.isHidden));
+
   Future<void> _merge() async {
     final others = (await api.people(withHidden: true)).where((p) => p.id != _person.id).toList();
     if (!mounted) return;
@@ -660,7 +664,19 @@ class _PersonScreenState extends State<PersonScreen> {
   Widget build(BuildContext context) {
     final p = _person;
     final age = p.birthDate == null ? null : ageAt(p.birthDate!, DateTime.now());
-    return TimelineScreen(
+    // Web v3.4: E edit, F favorite, H hide / show, M merge (not while photos are
+    // selected: then F favorites the photos, handled by the timeline first).
+    void key(VoidCallback f) {
+      if (!isTypingText()) f();
+    }
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyE): () => key(_edit),
+        const SingleActivator(LogicalKeyboardKey.keyF): () => key(_toggleFavorite),
+        const SingleActivator(LogicalKeyboardKey.keyH): () => key(_toggleHidden),
+        const SingleActivator(LogicalKeyboardKey.keyM): () => key(_merge),
+      },
+      child: TimelineScreen(
       key: ValueKey(p.id),
       api: api,
       title: p.name.isEmpty ? t('linux_unnamed_person') : p.name,
@@ -674,12 +690,12 @@ class _PersonScreenState extends State<PersonScreen> {
         IconButton(
           tooltip: p.isFavorite ? t('remove_from_favorites') : t('to_favorite'),
           icon: Icon(p.isFavorite ? Icons.favorite : Icons.favorite_border),
-          onPressed: () => _update(() => api.updatePerson(p.id, isFavorite: !p.isFavorite)),
+          onPressed: _toggleFavorite,
         ),
         IconButton(
           tooltip: p.isHidden ? t('unhide_person') : t('hide_person'),
           icon: Icon(p.isHidden ? Icons.visibility : Icons.visibility_off_outlined),
-          onPressed: () => _update(() => api.updatePerson(p.id, isHidden: !p.isHidden)),
+          onPressed: _toggleHidden,
         ),
         IconButton(tooltip: t('merge_people'), icon: const Icon(Icons.merge_type), onPressed: _merge),
         FutureBuilder<bool>(
@@ -694,7 +710,7 @@ class _PersonScreenState extends State<PersonScreen> {
         ),
         const SizedBox(width: 8),
       ],
-    );
+    ));
   }
 }
 

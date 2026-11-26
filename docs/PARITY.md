@@ -8,7 +8,7 @@ Source of truth: `immich-app/immich@v3.1.0`, plus the v3.2 – v3.4.2 deltas bel
 |---|---|---|
 | "user_liked" text: `image` / `video` / `other` type | `ActivityViewer.svelte` | ✅ |
 | Shortcut F: favorite / unfavorite the selection | `TimelineKeyboardActions.svelte` | ✅ (keeps the selection, like the button) |
-| Person page shortcuts: E edit, F favorite, H hide / show, M merge; hidden/favorite indicator on the header avatar | `person.service.ts`, `people/[personId]` | ⬜ |
+| Person page shortcuts: E edit, F favorite, H hide / show, M merge; hidden/favorite indicator on the header avatar | `person.service.ts`, `people/[personId]` | ✅ shortcuts (our header has no avatar; the heart / eye buttons show the state) |
 | Passkeys in account settings: list, rename, delete (registering a new one and passkey login need WebAuthn, which a native Linux app can't do → use the web) | `UserPasskeyList.svelte` | ⬜ |
 | Server feature level (`featureLevel` in `/server/version`; 2 = passkeys) | `server.service.ts` | ⬜ |
 | Maintenance: restore from a database backup / FUTO Backups; admin passkey settings; workflow OCR trigger; JPEG XL thumbnails | admin | ➖ server settings stay in the web (same as before) |

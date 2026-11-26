@@ -54,6 +54,12 @@ String formatDuration(int ms) {
   return '${d.inMinutes}:$s';
 }
 
+/// Letter keys are text while a text field has the focus: no shortcuts then.
+bool isTypingText() {
+  final ctx = FocusManager.instance.primaryFocus?.context;
+  return ctx != null && (ctx.widget is EditableText || ctx.findAncestorWidgetOfExactType<EditableText>() != null);
+}
+
 class TimelineView extends StatefulWidget {
   final ImmichApi api;
   final AssetSource source;
@@ -250,12 +256,6 @@ class _TimelineViewState extends State<TimelineView> {
     }
   }
 
-  /// Letter keys are text while a text field has the focus.
-  static bool _typing() {
-    final ctx = FocusManager.instance.primaryFocus?.context;
-    return ctx != null && (ctx.widget is EditableText || ctx.findAncestorWidgetOfExactType<EditableText>() != null);
-  }
-
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, c) {
@@ -322,11 +322,13 @@ class _TimelineViewState extends State<TimelineView> {
           const SingleActivator(LogicalKeyboardKey.escape): _selection.clear,
           const SingleActivator(LogicalKeyboardKey.keyA, control: true): _selectAll,
           // F (web v3.4): favorite the selection, or unfavorite it when all are favorites.
-          const SingleActivator(LogicalKeyboardKey.keyF): () {
-            if (_selection.isEmpty || _typing()) return;
-            final fav = actions.where((a) => a == AssetAction.favorite || a == AssetAction.unfavorite).firstOrNull;
-            if (fav != null) _run(fav);
-          },
+          // Without a selection F belongs to the page (the person page's favorite).
+          if (!_selection.isEmpty)
+            const SingleActivator(LogicalKeyboardKey.keyF): () {
+              if (isTypingText()) return;
+              final fav = actions.where((a) => a == AssetAction.favorite || a == AssetAction.unfavorite).firstOrNull;
+              if (fav != null) _run(fav);
+            },
           if (widget.mode == TimelineMode.normal || widget.mode == TimelineMode.archive)
             const SingleActivator(LogicalKeyboardKey.delete): () {
               if (!_selection.isEmpty) _run(AssetAction.trash);
