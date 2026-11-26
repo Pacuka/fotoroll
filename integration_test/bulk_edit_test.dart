@@ -7,6 +7,7 @@ import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fotoroll/api.dart';
 import 'package:fotoroll/backup.dart';
@@ -186,6 +187,28 @@ void main() {
     await tap(find.byTooltip('Clear selection (Esc)'));
     await select([a]);
     expect(find.byTooltip('Menu'), findsOneWidget);
+
+    // 7. F (web v3.4) favorites the selection, F again unfavorites it; the selection stays.
+    await tap(find.byTooltip('Clear selection (Esc)'));
+    await select([a, b]);
+    focusView(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
+    await until(() => server.asset(a)['isFavorite'] == true && server.asset(b)['isFavorite'] == true, 'F favorited');
+    await waitFor(find.text('Added 2 to favorites'));
+    await shot('bulk_f_favorite');
+    expect(find.text('2 selected'), findsOneWidget);
+    focusView(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
+    await until(() => server.asset(a)['isFavorite'] == false && server.asset(b)['isFavorite'] == false, 'F unfavorited');
+    // With a partner's photo selected, F changes nothing.
+    await tap(find.byTooltip('Clear selection (Esc)'));
+    await select([a, uid(5)]);
+    final before = server.bulkUpdates.length;
+    focusView(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
+    await wait(const Duration(milliseconds: 500));
+    expect(server.asset(a)['isFavorite'], isFalse);
+    expect(server.bulkUpdates.length, before);
 
     expect(errors, isEmpty);
     FlutterError.onError = previous;

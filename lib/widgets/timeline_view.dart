@@ -250,6 +250,12 @@ class _TimelineViewState extends State<TimelineView> {
     }
   }
 
+  /// Letter keys are text while a text field has the focus.
+  static bool _typing() {
+    final ctx = FocusManager.instance.primaryFocus?.context;
+    return ctx != null && (ctx.widget is EditableText || ctx.findAncestorWidgetOfExactType<EditableText>() != null);
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, c) {
@@ -304,10 +310,23 @@ class _TimelineViewState extends State<TimelineView> {
       final selected = _selection.assets;
       // Unknown owners (or my id not known yet) count as mine; the server has the last word.
       final allOwned = selected.every((a) => a.ownerId == null || _myId == null || a.ownerId == _myId);
+      final actions = widget.onPicked != null
+          ? const <AssetAction>[]
+          : actionsFor(widget.mode,
+              allFavorite: selected.every((a) => a.isFavorite),
+              albumId: widget.albumId,
+              count: selected.length,
+              allOwned: allOwned);
       return CallbackShortcuts(
         bindings: {
           const SingleActivator(LogicalKeyboardKey.escape): _selection.clear,
           const SingleActivator(LogicalKeyboardKey.keyA, control: true): _selectAll,
+          // F (web v3.4): favorite the selection, or unfavorite it when all are favorites.
+          const SingleActivator(LogicalKeyboardKey.keyF): () {
+            if (_selection.isEmpty || _typing()) return;
+            final fav = actions.where((a) => a == AssetAction.favorite || a == AssetAction.unfavorite).firstOrNull;
+            if (fav != null) _run(fav);
+          },
           if (widget.mode == TimelineMode.normal || widget.mode == TimelineMode.archive)
             const SingleActivator(LogicalKeyboardKey.delete): () {
               if (!_selection.isEmpty) _run(AssetAction.trash);
@@ -325,13 +344,7 @@ class _TimelineViewState extends State<TimelineView> {
                 top: 8,
                 child: SelectionBar(
                   selection: _selection,
-                  actions: widget.onPicked != null
-                      ? const []
-                      : actionsFor(widget.mode,
-                          allFavorite: selected.every((a) => a.isFavorite),
-                          albumId: widget.albumId,
-                          count: selected.length,
-                          allOwned: allOwned),
+                  actions: actions,
                   menu: widget.onPicked != null ? const [] : menuActionsFor(widget.mode, selected, allOwned: allOwned),
                   onAction: _run,
                   trailing: widget.onPicked == null
