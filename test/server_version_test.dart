@@ -20,4 +20,15 @@ void main() {
     expect(api.supports(Since.rotateApiKey), isTrue);
     expect(api.supports(Since.tagRename), isFalse);
   });
+
+  test('feature level (v3.4): parsed when sent, missing means none', () {
+    expect(ServerVersion.fromJson({'major': 3, 'minor': 4, 'patch': 2, 'featureLevel': 2}).featureLevel, 2);
+    expect(ServerVersion.fromJson({'major': 3, 'minor': 3, 'patch': 5}).featureLevel, isNull);
+    // A new feature level is a change the app must notice.
+    expect(const ServerVersion(3, 4, 2, 1) == const ServerVersion(3, 4, 2, 2), isFalse);
+    final api = ImmichApi(Credentials(serverUrl: 'http://127.0.0.1:9', apiKey: 'k'));
+    expect(api.hasFeatureLevel(FeatureLevel.passkeys), isFalse);
+    api.serverVersion.value = const ServerVersion(3, 4, 2, 2);
+    expect(api.hasFeatureLevel(FeatureLevel.passkeys), isTrue);
+  });
 }

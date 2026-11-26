@@ -46,6 +46,14 @@ class AccountSettingsScreen extends StatelessWidget {
                 _PrefsSection(api: api, groups: _featurePrefs)),
             section(Icons.notifications_outlined, t('notifications'), t('notifications_setting_description'),
                 _PrefsSection(api: api, groups: _notificationPrefs)),
+            // Immich v3.4: only when the admin turned passkey login on.
+            FutureBuilder<bool>(
+              future: api.passkeysEnabled().catchError((_) => false),
+              builder: (context, snap) => snap.data == true
+                  ? section(Icons.shield_outlined, t('passkeys', {'count': 5}), t('manage_your_passkeys'),
+                      _PasskeysSection(api: api))
+                  : const SizedBox.shrink(),
+            ),
             section(Icons.password, t('password'), t('change_your_password'), _PasswordSection(api: api)),
             section(Icons.pin_outlined, t('user_pin_code_settings'), t('user_pin_code_settings_description'),
                 _PinSection(api: api)),
@@ -721,6 +729,107 @@ class _ApiKeysSectionState extends State<_ApiKeysSection> {
             child: FilledButton.tonalIcon(
                 onPressed: _create, icon: const Icon(Icons.add), label: Text(t('new_api_key'))),
           ),
+        ]);
+      },
+    );
+  }
+}
+
+/// Web: UserPasskeyList (Immich v3.4). Only list, rename and remove: creating a
+/// passkey needs WebAuthn, which only a browser has.
+class _PasskeysSection extends StatefulWidget {
+  final ImmichApi api;
+  const _PasskeysSection({required this.api});
+
+  @override
+  State<_PasskeysSection> createState() => _PasskeysSectionState();
+}
+
+class _PasskeysSectionState extends State<_PasskeysSection> {
+  late Future<List<Map<String, dynamic>>> _keys = widget.api.passkeys();
+
+  void _reload() => setState(() { _keys = widget.api.passkeys(); });
+
+  String _name(Map<String, dynamic> k) => (k['name'] as String?) ?? t('passkeys', {'count': 1});
+
+  Future<void> _rename(Map<String, dynamic> k) async {
+    final name = TextEditingController(text: k['name'] ?? '');
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('edit_passkey')),
+        content: TextField(
+          controller: name,
+          autofocus: true,
+          decoration: InputDecoration(labelText: t('name')),
+          onSubmitted: (_) => Navigator.pop(ctx, true),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('save'))),
+        ],
+      ),
+    );
+    final text = name.text.trim();
+    // Not disposed here: the dialog's closing animation still shows the field.
+    if (ok != true || !mounted) return;
+    await _guard(context, () async {
+      await widget.api.renamePasskey(k['id'], text.isEmpty ? null : text);
+      _reload();
+    });
+  }
+
+  Future<void> _delete(Map<String, dynamic> k) => _guard(context, () async {
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(t('delete_passkey')),
+            content: Text(t('delete_passkey_prompt')),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('cancel'))),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('delete'))),
+            ],
+          ),
+        );
+        if (ok != true) return;
+        await widget.api.deletePasskey(k['id']);
+        if (mounted) _toast(context, t('removed_passkey', {'name': _name(k)}));
+        _reload();
+      });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _keys,
+      builder: (context, snap) {
+        if (snap.hasError) return Text('${t('error')}: ${snap.error}');
+        if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+        final keys = snap.data!;
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(t('passkeys_on_server_description'), style: theme.textTheme.bodySmall),
+          const SizedBox(height: 8),
+          if (keys.isEmpty) Text(t('linux_no_passkeys')),
+          for (final k in keys)
+            ListTile(
+              key: ValueKey('passkey-${k['id']}'),
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.key),
+              title: Text(_name(k)),
+              subtitle: Text('${t('created')}: ${_date(k['createdAt'])} · '
+                  '${t('last_used')}: ${k['usedAt'] == null ? t('never') : _date(k['usedAt'])}'),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                IconButton(tooltip: t('edit_passkey'), icon: const Icon(Icons.edit_outlined), onPressed: () => _rename(k)),
+                IconButton(
+                    tooltip: t('delete_passkey'), icon: const Icon(Icons.delete_outline), onPressed: () => _delete(k)),
+              ]),
+            ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Icon(Icons.info_outline, size: 18, color: theme.colorScheme.outline),
+            const SizedBox(width: 8),
+            Expanded(child: Text(t('linux_passkey_add_in_web'), style: theme.textTheme.bodySmall)),
+          ]),
         ]);
       },
     );

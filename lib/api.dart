@@ -454,10 +454,13 @@ class SearchPage {
 /// An Immich server version (GET /server/version).
 class ServerVersion implements Comparable<ServerVersion> {
   final int major, minor, patch;
-  const ServerVersion(this.major, this.minor, [this.patch = 0]);
+  /// Immich v3.4+: the highest feature level the server supports, counted apart
+  /// from the release version (see [FeatureLevel]); null on older servers.
+  final int? featureLevel;
+  const ServerVersion(this.major, this.minor, [this.patch = 0, this.featureLevel]);
 
-  factory ServerVersion.fromJson(Map<String, dynamic> j) =>
-      ServerVersion((j['major'] as num).toInt(), (j['minor'] as num).toInt(), (j['patch'] as num).toInt());
+  factory ServerVersion.fromJson(Map<String, dynamic> j) => ServerVersion((j['major'] as num).toInt(),
+      (j['minor'] as num).toInt(), (j['patch'] as num).toInt(), (j['featureLevel'] as num?)?.toInt());
 
   @override
   int compareTo(ServerVersion other) => major != other.major
@@ -469,10 +472,11 @@ class ServerVersion implements Comparable<ServerVersion> {
   bool isAtLeast(ServerVersion other) => compareTo(other) >= 0;
 
   @override
-  bool operator ==(Object other) => other is ServerVersion && compareTo(other) == 0;
+  bool operator ==(Object other) =>
+      other is ServerVersion && compareTo(other) == 0 && featureLevel == other.featureLevel;
 
   @override
-  int get hashCode => Object.hash(major, minor, patch);
+  int get hashCode => Object.hash(major, minor, patch, featureLevel);
 
   @override
   String toString() => 'v$major.$minor.$patch';
@@ -489,6 +493,11 @@ abstract final class Since {
   static const tagRename = ServerVersion(3, 3);
   static const sharedPeople = ServerVersion(3, 3);
   static const albumEditorDetails = ServerVersion(3, 3);
+}
+
+/// Server feature levels (Immich v3.4 `ServerFeatureLevel`).
+abstract final class FeatureLevel {
+  static const passkeys = 2;
 }
 
 /// "Needs Immich v3.2 or newer": shown on what the server is too old for.
@@ -522,6 +531,9 @@ class ImmichApi {
   /// False only when the server is known to be older than [v]. An unknown version
   /// counts as new enough: the calls then fall back on a 404 as before.
   bool supports(ServerVersion v) => serverVersion.value?.isAtLeast(v) ?? true;
+  /// Whether the server reports at least feature [level] (unknown → false: the
+  /// features behind levels are new, old servers don't have them).
+  bool hasFeatureLevel(int level) => (serverVersion.value?.featureLevel ?? 0) >= level;
 
   String get base => '${normalizeServerUrl(creds.serverUrl)}/api';
   Map<String, String> get headers => creds.headers;
@@ -949,6 +961,24 @@ class ImmichApi {
       (await _sendJson('POST', '/api-keys', {'name': name, 'permissions': ['all']}))['secret'];
 
   Future<void> deleteApiKey(String id) => _sendJson('DELETE', '/api-keys/$id');
+
+  // ---- Passkeys (Immich v3.4, feature level 2) ----
+  // Registering one and passkey login need WebAuthn (a browser); here they can
+  // only be listed, renamed and removed.
+
+  /// Whether the admin turned passkey login on (GET /config; false on older servers).
+  Future<bool> passkeysEnabled() async {
+    if (!hasFeatureLevel(FeatureLevel.passkeys)) return false;
+    return ((await _getJson('/config'))['passkey'] as Map?)?['enabled'] == true;
+  }
+
+  Future<List<Map<String, dynamic>>> passkeys() async =>
+      (await _getJson('/passkeys') as List).cast<Map<String, dynamic>>();
+
+  /// [name] null clears the name (the web then shows "Passkey").
+  Future<void> renamePasskey(String id, String? name) => _sendJson('PATCH', '/passkeys/$id', {'name': name});
+
+  Future<void> deletePasskey(String id) => _sendJson('DELETE', '/passkeys/$id');
 
   /// New secret for a key (Immich v3.2+); the old one stops working at once. Rotating the key
   /// this app signs in with switches the app to the new secret. Returns (secret, wasOwnKey).

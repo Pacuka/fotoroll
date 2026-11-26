@@ -29,7 +29,7 @@ It aims to bring everything from the official web and mobile apps to the desktop
 - **Sharing**: shared albums, partners, shared links management
 - **Library pages**: Favorites, Tags, Folders, Archive, Locked folder (PIN), Trash, Utilities
   (duplicates, large files), People management (rename, birth date, hide, merge)
-- **Account settings** and **Administration** (users, libraries, jobs, all system settings, maintenance)
+- **Account settings** (incl. passkeys: list, rename, remove; new ones and passkey login need the web) and **Administration** (users, libraries, jobs, all system settings, maintenance)
 - **Folder backup**: watches selected folders while the app runs and uploads new photos and videos
   (SHA-1 de-duplication, excluded subfolders; local files are never changed)
 - **Desktop integration**: drag & drop files or folders onto the window to upload, system tray
@@ -52,6 +52,8 @@ See [docs/PARITY.md](docs/PARITY.md) for the full feature checklist against the 
 | Viewer, slideshow | `F11` | Full screen |
 | Slideshow | `Space` / `←` `→` / `Esc` | Pause / previous, next / exit |
 | Timeline | `Ctrl+A` / `Esc` / `Del` | Select all / clear selection / trash selected |
+| Timeline (with a selection) | `F` | Favorite / unfavorite the selected photos |
+| Person page | `E` / `F` / `H` / `M` | Edit / favorite / hide or show / merge |
 
 ## Requirements
 

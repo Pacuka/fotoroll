@@ -162,6 +162,12 @@ class FakeImmich {
   bool v31 = false;
   /// What GET /server/version reports (v31 makes it 3.1.0).
   List<int> version = [3, 4, 2];
+  /// GET /server/version's featureLevel (v3.4: 2 = passkeys); null = not sent (older servers).
+  int? featureLevel = 2;
+  /// The admin's passkey login switch (GET /config → passkey.enabled).
+  bool passkeyLogin = true;
+  /// PasskeyResponseDto list (v3.4).
+  final passkeys = <Map<String, dynamic>>[];
 
   int get port => _server.port;
   String get url => 'http://127.0.0.1:$port';
@@ -295,9 +301,18 @@ class FakeImmich {
       out = {'diskUse': '1 GiB', 'diskSize': '10 GiB', 'diskUsagePercentage': 10};
     } else if (path == '/api/server/version') {
       final v = v31 ? [3, 1, 0] : version;
-      out = {'major': v[0], 'minor': v[1], 'patch': v[2]};
+      out = {'major': v[0], 'minor': v[1], 'patch': v[2], if (!v31 && featureLevel != null) 'featureLevel': featureLevel};
     } else if (path == '/api/config') {
-      out = {'trash': {'enabled': true, 'days': 30}};
+      out = {'trash': {'enabled': true, 'days': 30}, if (!v31) 'passkey': {'enabled': passkeyLogin}};
+    } else if (path == '/api/passkeys' && m == 'GET' && !v31) {
+      out = passkeys;
+    } else if (match(r'/api/passkeys/([\w-]+)') case final r? when m == 'PATCH' && !v31) {
+      final k = passkeys.firstWhere((k) => k['id'] == r[1]);
+      k['name'] = (body as Map)['name'];
+      out = k;
+    } else if (match(r'/api/passkeys/([\w-]+)') case final r? when m == 'DELETE' && !v31) {
+      passkeys.removeWhere((k) => k['id'] == r[1]);
+      status = 204;
     } else if (path == '/api/server/media-types') {
       out = {'image': ['.jpg'], 'video': ['.mp4'], 'sidecar': []};
     } else if (path == '/api/timeline/buckets') {
